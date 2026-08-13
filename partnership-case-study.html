@@ -107,8 +107,16 @@
   --text-lede:21px;     /* lede + subtitle/deck   */
   --text-subhead:20px;  /* h3.sub                 */
   --text-dbox-title:24px; /* decision-box title — fills the empty 20->30 rung */
-  --text-prose:18px;    /* main body              */
-  --text-nested:16px;   /* deep-dive / list / quote */
+  /* Body copy runs at 85% of the sizes the ladder was built on. One factor
+     drives both prose steps so the relationship between them is preserved and
+     a future adjustment is a single number. Headings are NOT scaled. */
+  --prose-scale:0.85;
+  --text-prose:calc(18px * var(--prose-scale));   /* main body              */
+  --text-nested:calc(16px * var(--prose-scale));  /* deep-dive / list / quote */
+  /* .dir-label and .mod-name used to ride --text-nested, but they are labels,
+     not body copy, and the brief was to leave headings alone. They hold the
+     original step. */
+  --text-label:16px;
 
   --space-8:8px;   --space-16:16px;  --space-24:24px;  --space-32:32px;
   --space-40:40px; --space-48:48px;  --space-64:64px;  --space-80:80px;
@@ -654,7 +662,7 @@ h3.sub{
 }
 .dirbox .dir-label{
   margin:0 0 14px;
-  font-size:var(--text-nested); line-height:1.4;
+  font-size:var(--text-label); line-height:1.4;
   font-weight:var(--fw-medium); color:var(--ink);
   letter-spacing:var(--tracking);
 }
@@ -800,7 +808,7 @@ figcaption .cap-n{
 .mod-list > li:first-child{ border-top:0; padding-top:0; }
 .mod-list > li:last-child{ padding-bottom:0; }
 .mod-name{
-  font-size:var(--text-nested); line-height:1.5;
+  font-size:var(--text-label); line-height:1.5;
   font-weight:var(--fw-medium); color:var(--ink);
 }
 .mod-items{ font-size:var(--text-nested); line-height:1.6; color:var(--ink-2); }
@@ -1065,8 +1073,9 @@ footer p{
                             relative to body on mobile than on desktop */
     --text-lede:18px;
     --text-pull:18px;
-    --text-prose:17px;
-    --text-nested:15px;  /* stays below body so the deep-dive distinction survives */
+    --text-prose:calc(17px * var(--prose-scale));
+    --text-nested:calc(15px * var(--prose-scale));  /* stays below body so the deep-dive distinction survives */
+    --text-label:15px;
     --gap-block:40px; --gap-figure:48px; --gap-section:64px;
     --gap-dbox:24px;
     /* 22, not 20 (would stay tied to body copy) and not 24 (would tie
