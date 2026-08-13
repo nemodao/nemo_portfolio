@@ -129,6 +129,11 @@
   --measure:680px;      /* the reading column — the spine */
   --measure-wide:940px; /* figures may break to here, never further */
   --measure-modal:720px;/* dialog panel — just past the 680px column, not a slab */
+  /* The tinted band: wider than the 680px column so text is never pressed
+     against the boundary, and it collapses harmlessly below its own width —
+     on a phone the stops resolve outside the viewport and the whole screen
+     stays canvas, so there is no stray edge colour. */
+  --band:800px;
 }
 
 /* ---------- DARK — the base ---------- */
@@ -195,6 +200,14 @@
   --notice-ink:#E6F5C4;
   --notice-x:#B7CE86;
   --shadow-notice:0 4px 16px -6px rgba(0,0,0,0.55);
+
+  /* Reading band. A deliberate departure from the one-canvas rule: the 680px
+     column floating in an unbounded margin gives the eye nothing to anchor on.
+     The surround steps 1.086:1 from the canvas — below the 1.098:1 step the
+     figure frames already use, so this is the gentlest boundary on the page.
+     Dark and light are matched steps (1.086 / 1.083), so the effect reads the
+     same weight in both modes rather than shouting in one. */
+  --surround:#1D1D1D;
 }
 
 /* ---------- LIGHT — same system, lights on ---------- */
@@ -242,6 +255,7 @@
   --notice-ink:#2E3A08;
   --notice-x:#4A5C10;
   --shadow-notice:0 4px 16px -6px rgba(20,20,20,0.16);
+  --surround:#F2F2F0;
 }
 
 /* ---------- BASE ---------- */
@@ -295,6 +309,23 @@ a:hover{ text-decoration-color:var(--ink); }
   grid-column:2 / -1;
   width:min(var(--measure-wide), 100% - var(--space-24));
   margin-inline:0;
+}
+
+/* Painted on a fixed pseudo-element rather than on body: the stripe is uniform
+   vertically, so pinning it to the viewport costs one paint instead of one per
+   scroll, and it leaves body's own background-color intact for the Safari 26
+   toolbar fallback. z-index:-1 puts it above body's background and below every
+   piece of content. */
+body::before{
+  content:"";
+  position:fixed; inset:0; z-index:-1;
+  background:linear-gradient(to right,
+    var(--surround) 0,
+    var(--surround) calc(50% - var(--band) / 2),
+    var(--canvas)   calc(50% - var(--band) / 2),
+    var(--canvas)   calc(50% + var(--band) / 2),
+    var(--surround) calc(50% + var(--band) / 2),
+    var(--surround) 100%);
 }
 
 /* ---------- Safari 26 tint source ----------
