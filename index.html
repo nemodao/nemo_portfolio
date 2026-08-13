@@ -36,8 +36,24 @@
     document.documentElement.setAttribute('data-theme', t);
 
     window.setThemeColor = function(mode){
+      /* Chromium reads this and repaints on change. Safari 26 ignores it. */
       var m = document.getElementById('themeColorMeta');
       if (m) m.setAttribute('content', mode === 'dark' ? '#242424' : '#FBFBFA');
+
+      /* Safari 26: the tint is sampled from the render tree, not from the tag,
+         and a colour change alone does not trigger a fresh sample. Taking the
+         sampled element out of the render tree and putting it back does — that
+         is the only documented lever. display:none is required; opacity or
+         visibility leave the element in the tree and still sampled.
+         Reading offsetHeight between the two writes forces the removal to be
+         laid out, otherwise the pair collapses into one style recalculation
+         and the tree never actually changes. */
+      var strip = document.getElementById('tintStrip');
+      if (strip) {
+        strip.style.display = 'none';
+        void strip.offsetHeight;
+        strip.style.display = '';
+      }
     };
     /* Runs in <head>, before first paint. */
     window.setThemeColor(t);
@@ -279,6 +295,25 @@ a:hover{ text-decoration-color:var(--ink); }
   grid-column:2 / -1;
   width:min(var(--measure-wide), 100% - var(--space-24));
   margin-inline:0;
+}
+
+/* ---------- Safari 26 tint source ----------
+   Safari 26 ignores theme-color and instead samples the background-color of a
+   fixed/sticky element within 4px of the top, >=80% wide and >=3px tall.
+   On this page that was .topbar — but .topbar is 88%-alpha canvas over a 10px
+   backdrop blur, and Safari reads background-color AND backdrop-filter, so it
+   was sampling a translucent value rather than the canvas itself.
+   This strip is the exact canvas colour, fully opaque, 3px tall (the
+   documented minimum) and pinned at top:0, so it wins the sample and the
+   colour is exact. pointer-events:none so it cannot swallow taps on the bar
+   beneath it, and it is invisible because it sits on canvas-coloured chrome.
+   It is also the lever the toggle uses: WebKit re-evaluates tinting when the
+   render tree changes, so dropping this element and restoring it is the one
+   documented way to make Safari take a fresh sample at runtime. */
+.tint-strip{
+  position:fixed; top:0; left:0; width:100%; height:3px;
+  background:var(--canvas);
+  pointer-events:none; z-index:60;
 }
 
 /* ---------- top bar ---------- */
@@ -1117,6 +1152,8 @@ footer p{
 </style>
 </head>
 <body>
+
+<div class="tint-strip" id="tintStrip" aria-hidden="true"></div>
 
 <div class="topbar">
   <div class="topbar-inner">
