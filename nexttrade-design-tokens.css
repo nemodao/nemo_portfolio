@@ -1,0 +1,319 @@
+/* ============================================================
+   nexttrade.ai — Design Token System
+   ------------------------------------------------------------
+   BASE:   Supabase, adopted as the dark mode. Every structural
+           rule is kept — cards are the SAME colour as the canvas,
+           defined only by a 1px hairline · no shadows except one
+           sanctioned modal · 11-step neutral ramp · Circular
+           (→Manrope) 400/500 only.
+           ONE deliberate departure: the canvas is #242424, not
+           Supabase's #121212. Long-form reading on near-black
+           glared, so the ground was lifted and EVERY surface,
+           border and stroke re-anchored to hold the same
+           contrast relationships. Fidelity yielded to legibility.
+
+   ACCENT: lime #C7FF20 substituted wherever Supabase uses
+           phosphor green #3ecf8e. Same rationing: primary CTA,
+           one burst region, logo/active state. Never on body
+           text, never on links.
+
+   LIGHT:  a systematic inversion of the SAME structure — not a
+           redesign. Every rule survives: cards = canvas colour
+           + hairline border, no shadow, same radii, same type,
+           same rationing. Only the values flip.
+   ============================================================ */
+
+/* ============================================================
+   1. RAW PALETTE — Supabase names, kept canonical so the
+      inversion below can be read against the source.
+   ============================================================ */
+:root{
+  /* Neutral ramp (dark-native values) */
+  --snow:         #fafafa;  /* primary text, icon strokes, button labels */
+  --silver-mist:  #b4b4b4;  /* secondary headings, nav, body emphasis     */
+  --smoke:        #898989;  /* tertiary text, captions, helper, metadata  */
+  --graphite:     #4d4d4d;  /* icon outlines, line-art illustration work  */
+  --slate:        #393939;  /* input borders, hairline separators         */
+  --charcoal:     #2e2e2e;  /* card & component borders — most-used       */
+  --ash:          #242424;  /* Supabase's elevated tier — note this is now
+                             our canvas value; our raised tier is #323232 */
+  --obsidian:     #121212;  /* Supabase's canvas — kept for reference; ours
+                             now sits at #242424, see DARK MODE below    */
+  --pitch:        #0d0d0d;  /* recessed illustration panel ground         */
+
+  /* Accent — lime stands in for phosphor green #3ecf8e.
+     ONLY ever a filled surface with dark ink on top; it is far
+     too bright to read as text, and invisible on a light canvas. */
+  --accent:       #C7FF20;
+  --accent-hover: #B8EE12;
+  --accent-ink:   #121212;  /* Obsidian, the ink that sits ON the accent */
+  --accent-press: #1f4b37;  /* Forest Depth role: pressed border on accent */
+
+  /* ---------- Typography ----------
+     Circular → Manrope (geometric humanist, rounded terminals).
+     Weights top out at 500. Headlines ride at 400 — anti-bold
+     is the point. Uniform -0.007em tracking is the signature. */
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, -apple-system,
+               BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo,
+               Monaco, Consolas, monospace;
+
+  --fw-regular: 400;
+  --fw-medium:  500;
+
+  --tracking:      -0.007em;  /* every sans size, without exception */
+  --tracking-mono:  0.100em;  /* mono runs wide — the terminal cadence */
+
+  --text-caption:    12px;  --leading-caption:    1.5;
+  --text-body-sm:    14px;  --leading-body-sm:    1.43;
+  --text-body:       16px;  --leading-body:       1.5;
+  --text-subheading: 18px;  --leading-subheading: 1.38;
+  --text-heading-sm: 24px;  --leading-heading-sm: 1.33;
+  --text-heading:    36px;  --leading-heading:    1.2;
+  --text-display:    72px;  --leading-display:    1;
+
+  /* ---------- Spacing — 8px base ---------- */
+  --space-8:8px;    --space-16:16px;  --space-24:24px;  --space-32:32px;
+  --space-40:40px;  --space-48:48px;  --space-64:64px;  --space-80:80px;
+  --space-96:96px;  --space-112:112px;--space-128:128px;--space-224:224px;
+
+  /* ---------- Radius — three values, nothing else ---------- */
+  --radius-input:  8px;      /* inputs                */
+  --radius-card:   16px;     /* cards                 */
+  --radius-pill:   9999px;   /* buttons, tags, pills  */
+
+  /* ---------- Layout ---------- */
+  --page-max:    1200px;
+  --prose-max:   680px;   /* long-form copy never spans the full grid */
+  --section-gap: 96px;    /* 64–96px rhythm; 64 at narrow widths      */
+  --card-pad:    24px;
+
+  /* NO SHADOW TOKENS. Elevation is expressed by hairline borders
+     and by the surface tier. Adding one breaks the system. */
+}
+
+/* ============================================================
+   2. DARK MODE — the base. Supabase values, unmodified.
+   ============================================================ */
+:root,
+[data-theme="dark"]{
+  color-scheme: dark;
+
+  --canvas:         #242424;   /* base ground. Lightened from Supabase's #121212
+                                  for sustained reading; every surface, border
+                                  and stroke below is anchored to THIS value  */
+  --surface:        #242424;   /* cards ARE the canvas — border only  */
+  --surface-raised: #323232;   /* Ash: nested cards, hover, popover   */
+  --surface-art:    #212121;   /* recessed ground for line-art panels */
+  --surface-2:      #2B2B2B;   /* the ONE tinted block fill. Every other card
+                                  is the canvas colour + a hairline; this is
+                                  the deliberate exception, for blocks that
+                                  must read as self-contained.          */
+  --surface-sunken: #1C1C1C;   /* the one RECESSED surface — mirror of
+                                  --surface-2's step, but below the canvas   */
+
+  --border:         #3B3B3B;   /* Charcoal                            */
+  --border-strong:  #454545;   /* Slate                               */
+  --stroke-art:     #595959;   /* Graphite — illustration line work   */
+
+  --ink:            #fafafa;   /* Snow — headings, numerals, diagram strokes */
+  --ink-body:       #CCCCCC;   /* long body passages ONLY — headings keep Snow.
+                                  9.67:1 on the canvas (AAA). Softened well below
+                                  Snow: sustained reading, not glare.        */
+  --ink-2:          #b4b4b4;   /* Silver Mist                         */
+  --ink-3:          #8B8B8B;   /* Smoke — raised from #898989: on the lighter
+                                  canvas the old value fell to 4.44:1        */
+
+  --ghost-border:   #454545;
+  --ghost-hover:    rgba(255,255,255,0.04);
+  --focus:          #C7FF20;   /* the accent border IS the focus ring */
+  --scrim:          rgba(0,0,0,0.66);
+  /* The single sanctioned shadow. Flat surfaces stay flat; only a layer that
+     genuinely floats free of the page may claim depth. Modals only. */
+  --shadow-modal:   0 24px 48px -12px rgba(0,0,0,0.72);
+}
+
+/* ============================================================
+   3. LIGHT MODE — the same system with the lights on.
+      Each value is the positional inverse of its dark twin.
+      The rule that must survive: --surface == --canvas.
+   ============================================================ */
+[data-theme="light"]{
+  color-scheme: light;
+
+  --canvas:         #FBFBFA;   /* Obsidian inverted                   */
+  --surface:        #FBFBFA;   /* still the canvas — border only      */
+  --surface-raised: #F4F4F3;   /* Ash inverted                        */
+  --surface-art:    #F0F0EE;   /* recessed ground, inverted           */
+  --surface-2:      #F3F3F1;   /* tinted block fill, inverted: dark lifts
+                                  off the canvas, light sinks below it  */
+  --surface-sunken: #F1F1EF;   /* recessed twin. Light cannot go lighter than a
+                                  near-white canvas, so this is a DEEPER step
+                                  than --surface-2, not a reversed one   */
+
+  --border:         #E4E4E2;   /* Charcoal inverted                   */
+  --border-strong:  #D3D3D0;   /* Slate inverted                      */
+  --stroke-art:     #8A8A83;   /* Graphite inverted, tuned up: light is the
+                                  default surface, so line-art clears 3:1   */
+
+  --ink:            #141414;   /* Snow inverted                       */
+  --ink-body:       #141414;   /* no softening needed on a light canvas */
+  --ink-2:          #55554F;   /* Silver Mist inverted                */
+  --ink-3:          #6C6C65;   /* Smoke inverted — clears AA on the art panel */
+
+  --ghost-border:   #D3D3D0;
+  --ghost-hover:    rgba(20,20,20,0.04);
+  --focus:          #141414;   /* lime is invisible here — ink instead */
+  --scrim:          rgba(20,20,20,0.42);
+  --shadow-modal:   0 24px 48px -12px rgba(20,20,20,0.20);
+}
+
+/* ============================================================
+   4. BASE ELEMENTS
+   ============================================================ */
+*{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+body{
+  margin:0;
+  background:var(--canvas);
+  color:var(--ink-body);
+  font-family:var(--font-sans);
+  font-weight:var(--fw-regular);
+  font-size:var(--text-body);
+  line-height:var(--leading-body);
+  letter-spacing:var(--tracking);
+  -webkit-font-smoothing:antialiased;
+  transition:background .25s ease, color .25s ease;
+}
+::selection{ background:var(--accent); color:var(--accent-ink); }
+
+/* Headlines ride at 400. Emphasis is size, or 500 — never bold. */
+h1,h2,h3,h4{ font-weight:var(--fw-regular); margin:0; letter-spacing:var(--tracking); }
+h1{ font-size:var(--text-display);    line-height:var(--leading-display); }
+h2{ font-size:var(--text-heading);    line-height:var(--leading-heading); }
+h3{ font-size:var(--text-heading-sm); line-height:var(--leading-heading-sm); }
+h4{ font-size:var(--text-subheading); line-height:var(--leading-subheading); }
+
+code, kbd, samp, pre{
+  font-family:var(--font-mono);
+  letter-spacing:var(--tracking-mono);
+}
+
+/* ============================================================
+   5. COMPONENTS — built to the DESIGN.md specs
+   ============================================================ */
+
+/* Pill buttons — 8px 16px padding, 9999px radius, 14px/500 */
+.btn{
+  font-family:var(--font-sans); font-size:var(--text-body-sm);
+  font-weight:var(--fw-medium); line-height:var(--leading-body-sm);
+  letter-spacing:var(--tracking);
+  padding:8px 16px; border-radius:var(--radius-pill);
+  border:1px solid transparent; cursor:pointer;
+  display:inline-flex; align-items:center; gap:8px;
+  text-decoration:none;
+  transition:background .15s ease, border-color .15s ease, color .15s ease;
+}
+
+/* Primary — the accent fill. The one filled chromatic surface in
+   the system; every instance should feel like a decision. */
+.btn-primary{
+  background:var(--accent); color:var(--accent-ink);
+  border-color:var(--accent);
+}
+.btn-primary:hover{ background:var(--accent-hover); border-color:var(--accent-press); }
+
+/* Ghost — transparent, hairline border, monochrome. Weight 400. */
+.btn-ghost{
+  background:transparent; color:var(--ink);
+  border-color:var(--ghost-border); font-weight:var(--fw-regular);
+}
+.btn-ghost:hover{ background:var(--ghost-hover); border-color:var(--stroke-art); }
+
+/* Inverse — for use ON an accent fill, where a lime button would
+   disappear. Obsidian fill, lime label. */
+.btn-inverse{ background:var(--accent-ink); color:var(--accent); border-color:var(--accent-ink); }
+.btn-inverse:hover{ background:#000; }
+
+/* Card — background is the canvas; the border does all the work. */
+.card{
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--radius-card); padding:var(--card-pad);
+}
+
+/* Announcement pill — compact banner, Ash fill, Charcoal border */
+.pill{
+  display:inline-flex; align-items:center; gap:8px;
+  background:var(--surface-raised); border:1px solid var(--border);
+  border-radius:var(--radius-pill); padding:6px 16px;
+  font-size:var(--text-caption); line-height:var(--leading-caption);
+  color:var(--ink-2); letter-spacing:var(--tracking);
+}
+
+/* Tag */
+.tag{
+  display:inline-flex; align-items:center; gap:6px;
+  background:var(--surface-raised); border:1px solid var(--border);
+  border-radius:var(--radius-pill); padding:5px 12px;
+  font-size:var(--text-caption); color:var(--ink-2);
+}
+
+/* Inline code fragment — mono, wide tracking, Ash chip */
+.code-inline{
+  font-family:var(--font-mono); font-size:0.85em;
+  letter-spacing:var(--tracking-mono);
+  background:var(--surface-raised); border:1px solid var(--border);
+  color:var(--ink); padding:2px 8px; border-radius:var(--radius-input);
+  white-space:nowrap;
+}
+
+/* Input — the focus border IS the indicator. No glow, no ring. */
+.input{
+  background:var(--surface); border:1px solid var(--border-strong);
+  border-radius:var(--radius-input); padding:8px 12px;
+  color:var(--ink); font-family:var(--font-sans);
+  font-size:var(--text-body-sm); letter-spacing:var(--tracking);
+}
+.input::placeholder{ color:var(--ink-3); }
+.input:focus{ outline:none; border-color:var(--focus); }
+
+/* Line-art illustration panel — recessed ground, Graphite strokes.
+   The lower half of a feature card, and the ground for wireframes. */
+.art-panel{
+  background:var(--surface-art);
+  border-top:1px solid var(--border);
+  color:var(--stroke-art);
+}
+.art-panel svg{ display:block; width:100%; height:auto; }
+
+/* THE burst region — the single large accent surface on a page.
+   Everywhere else the accent is punctuation, not a background. */
+.burst{
+  background:var(--accent); color:var(--accent-ink);
+  border-radius:var(--radius-card);
+  padding:var(--space-80) var(--space-48);
+}
+.burst h1,.burst h2,.burst h3{ color:var(--accent-ink); }
+
+/* Section shell */
+.section{ padding:var(--section-gap) 0; }
+.wrap{ max-width:var(--page-max); margin:0 auto; padding:0 32px; }
+.prose{ max-width:var(--prose-max); }
+
+/* Theme toggle — ghost pill, icon only */
+.theme-toggle{
+  background:transparent; border:1px solid var(--ghost-border);
+  border-radius:var(--radius-pill); width:36px; height:36px;
+  cursor:pointer; color:var(--ink-2);
+  display:inline-flex; align-items:center; justify-content:center;
+  transition:border-color .15s ease, color .15s ease;
+}
+.theme-toggle:hover{ border-color:var(--stroke-art); color:var(--ink); }
+
+/* ============================================================
+   FONT LOADING (put in <head>)
+   ------------------------------------------------------------
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+   ============================================================ */

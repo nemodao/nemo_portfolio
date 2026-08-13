@@ -1,0 +1,1858 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Partnership System — Case Study</title>
+<meta name="description" content="The infrastructure that turns partner referrals into a revenue channel.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>
+  (function(){
+    /* Light is the default: this is a long-form reading surface. */
+    var t='light';
+    try{ t = localStorage.getItem('nt-theme') || 'light'; }catch(e){}
+    document.documentElement.setAttribute('data-theme', t==='dark'?'dark':'light');
+  })();
+</script>
+<style>
+/* ============================================================
+   nexttrade.ai — Design Tokens (inlined)
+   Base: Supabase, adopted as dark mode. Lime #C7FF20 replaces
+   phosphor green. Light mode is a positional inversion.
+   LAYOUT: long-form article. Single reading column is the spine.
+   ============================================================ */
+:root{
+  --accent:#C7FF20;
+  --accent-hover:#B8EE12;
+  --accent-ink:#121212;
+
+  --font-sans:'Manrope', ui-sans-serif, system-ui, -apple-system,
+              BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo,
+              Monaco, Consolas, monospace;
+
+  --fw-regular:400;
+  --fw-medium:500;
+
+  --tracking:-0.007em;
+  --tracking-mono:0.100em;
+  --tracking-label:0.08em;
+
+  --text-caption:12px;     --leading-caption:1.5;
+  --text-body-sm:14px;     --leading-body-sm:1.43;
+  --text-body:16px;        --leading-body:1.5;
+  --text-subheading:18px;  --leading-subheading:1.38;
+  --text-heading-sm:24px;  --leading-heading-sm:1.33;
+  --text-heading:36px;     --leading-heading:1.2;
+  --text-display:72px;     --leading-display:1;
+
+  /* article layer: prose runs at the 18px step with reading leading,
+     and the title caps below display — 72px is landing-page scale. */
+  --leading-prose:1.6;
+
+  /* Article type ladder — one size per role, no shared steps.
+     desktop: 16 -> 18 -> 20 -> 21 -> 22 -> 30 -> 44
+     mobile : 15 -> 17 -> 20 -> 18 -> 18 -> 24 -> 30   (overrides below) */
+  --text-title:44px;    /* hero h1                */
+  --text-h2:30px;       /* section heading        */
+  --text-pull:22px;     /* pull-quote             */
+  --text-lede:21px;     /* lede + subtitle/deck   */
+  --text-subhead:20px;  /* h3.sub                 */
+  --text-dbox-title:24px; /* decision-box title — fills the empty 20->30 rung */
+  --text-prose:18px;    /* main body              */
+  --text-nested:16px;   /* deep-dive / list / quote */
+
+  --space-8:8px;   --space-16:16px;  --space-24:24px;  --space-32:32px;
+  --space-40:40px; --space-48:48px;  --space-64:64px;  --space-80:80px;
+  --space-96:96px; --space-112:112px;--space-128:128px;
+
+  --radius-input:8px; --radius-card:16px; --radius-pill:9999px;
+
+  /* Vertical rhythm scale — ascending, each step visibly distinct:
+     line 28.8 -> paragraph 28 -> sub-head 48 -> figure 56 -> section 80 */
+  --gap-para:28px;          /* p -> p                          */
+  --gap-block:48px;         /* .figures, details, list, note, h3.sub, .pull */
+  --gap-figure:56px;        /* figures, symmetric               */
+  --gap-section:80px;       /* .sec / .burst, uniform           */
+  --gap-sec-after:20px;     /* h2 -> first paragraph            */
+  --gap-subhead-after:16px; /* h3.sub -> its first paragraph    */
+  --gap-dbox:32px;          /* decision box -> decision box     */
+
+  --measure:680px;      /* the reading column — the spine */
+  --measure-wide:940px; /* figures may break to here, never further */
+  --measure-modal:720px;/* dialog panel — just past the 680px column, not a slab */
+}
+
+/* ---------- DARK — the base ---------- */
+:root,
+[data-theme="dark"]{
+  color-scheme:dark;
+  --canvas:#242424;
+  --surface:#242424;
+  --surface-raised:#323232;
+  --surface-art:#212121;
+  /* The ONE tinted surface on the page. Every other card is canvas-coloured and
+     defined only by its hairline; the three decision boxes deliberately break
+     that so they read as self-contained blocks. Dark lifts, light sinks. */
+  --surface-2:#2B2B2B;
+  /* The one RECESSED surface — direction boxes. Sits a step BELOW the canvas,
+     the exact mirror of --surface-2's step above it (1.098:1 down vs 1.096:1
+     up), so the raised and recessed components read as opposite rungs of the
+     same ladder. The hairline gets STRONGER on it (1.52:1 vs 1.39:1 on canvas). */
+  --surface-sunken:#1C1C1C;
+  --scrim:rgba(0,0,0,0.66);
+  --shadow-modal:0 24px 48px -12px rgba(0,0,0,0.72);
+  --border:#3B3B3B;
+  --border-strong:#454545;
+  --stroke-art:#595959;
+  --ink:#fafafa;        /* headings, numerals, diagram strokes — stays Snow */
+  /* Long body passages only — headings stay at Snow. Snow over Obsidian
+     halates on a long article, so body sits well below it at 204 — 9.67:1
+     on the #242424 canvas (AAA is 7.0). Do not apply this to headings, and
+     note --ink-2 (180) sits just below it: the nested/deep-dive register is
+     only 24 steps darker, so neither may move without the other. */
+  --ink-body:#CCCCCC;
+  --ink-2:#b4b4b4;
+  --ink-3:#8B8B8B;
+  --ghost-border:#454545;
+  --ghost-hover:rgba(255,255,255,0.04);
+  --accent-mark:#C7FF20;   /* numerals, pull rule, figure arrows */
+  /* Marker wash — alpha on the fill, never the opacity property (that would
+     fade the heading text too). In dark the two contrasts move in OPPOSITE
+     directions as alpha rises: marker-vs-canvas climbs while snow-vs-marker
+     falls, crossing near .47. Chosen after a side-by-side at .20 / .35 / .50:
+        .20  rgb(54,65,21)     marker 1.72:1   text 10.46:1   <- this
+        .35  rgb(81,101,23)    marker 2.83:1   text  6.34:1
+        .50  rgb(109,137,25)   marker 4.68:1   text  3.84:1
+     .20 keeps the marker a quiet tint and leaves the heading text with the
+     most headroom — 10.46:1 clears AA and AAA outright, so the h2 size is
+     no longer load-bearing for contrast. Note there is NO murky mid-zone in
+     dark: separation is monotonic in alpha. The near-1.0 figure that turns up
+     in the history is LIGHT mode, which sits at 1.09:1 and reads on hue. */
+  --accent-wash:rgba(199,255,32,0.20);
+  --focus:#C7FF20;
+
+  /* Notice bar — the one element allowed to float, tinted in the page's own
+     lime. Dark values are NOT the light ones dimmed: the panel is set just
+     ABOVE the canvas (1.15:1) so it reads as lifted rather than recessed,
+     which is what a toast should do. Measured on #2A3116:
+       body #E6F5C4 11.76:1 · title #C7FF20 11.46:1
+       border #A8D82A 8.08:1 · close #B7CE86 7.87:1
+     The title takes the full accent and the border steps back from it: a 1px
+     rule at full strength would ring the whole bar in the loudest lime on the
+     page, while the same colour as a short bold line reads as a highlight. */
+  --notice-bg:#2A3116;
+  --notice-border:#A8D82A;
+  --notice-title:#C7FF20;
+  --notice-ink:#E6F5C4;
+  --notice-x:#B7CE86;
+}
+
+/* ---------- LIGHT — same system, lights on ---------- */
+[data-theme="light"]{
+  color-scheme:light;
+  --canvas:#FBFBFA;
+  --surface:#FBFBFA;
+  --surface-raised:#F4F4F3;
+  --surface-art:#F0F0EE;
+  --surface-2:#F3F3F1;   /* positional twin of dark's #2B2B2B: one step off canvas */
+  --surface-sunken:#F1F1EF; /* recessed twin of dark's #1C1C1C. Light cannot go
+                               lighter than a near-white canvas, so "recessed"
+                               here is a deeper step than --surface-2, not a
+                               reversed one — 1.092:1 vs the canvas.          */
+  --scrim:rgba(20,20,20,0.42);
+  --shadow-modal:0 24px 48px -12px rgba(20,20,20,0.20);
+  --border:#E4E4E2;
+  --border-strong:#D3D3D0;
+  --stroke-art:#8A8A83; /* 3.05:1 on the art panel — light is the default surface,
+                           so informational line-art is tuned for legibility here
+                           rather than mirroring dark's Graphite exactly */
+  --ink:#141414;
+  --ink-body:#141414;   /* light needs no softening — dark ink on light does not halate */
+  --ink-2:#55554F;
+  --ink-3:#6C6C65;      /* clears AA on the art panel (4.64), not just the canvas */
+  --ghost-border:#D3D3D0;
+  --ghost-hover:rgba(20,20,20,0.04);
+  --accent-mark:#5E7A00;   /* lime hue held (74deg), luminance inverted */
+  /* Marker wash — alpha on the fill, never the opacity property (that would
+     fade the heading text too). Light holds 0.50 while dark runs 0.20: the
+     two canvases are not symmetric here. Lime over near-white barely shifts
+     luminance (1.09:1 even at 0.50), so light needs the alpha to register at
+     all; lime over obsidian gains luminance fast, so dark needs far less. */
+  --accent-wash:rgba(199,255,32,0.50);
+  --focus:#141414;
+
+  /* Notice bar, light. Measured on #F4FADF:
+       body #2E3A08 11.36:1 · title #4F6800 5.91:1
+       border #5E7A00 4.60:1 · close #4A5C10 6.92:1
+     Raw lime over near-white sits at 1.09:1 and would vanish, so light works
+     in the hue-held, luminance-inverted accent the headings already use. */
+  --notice-bg:#F4FADF;
+  --notice-border:#5E7A00;
+  --notice-title:#4F6800;
+  --notice-ink:#2E3A08;
+  --notice-x:#4A5C10;
+}
+
+/* ---------- BASE ---------- */
+*{ box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+body{
+  margin:0;
+  background:var(--canvas);
+  color:var(--ink-body);
+  font-family:var(--font-sans);
+  font-weight:var(--fw-regular);
+  font-size:var(--text-prose);
+  line-height:var(--leading-prose);
+  letter-spacing:var(--tracking);
+  -webkit-font-smoothing:antialiased;
+  transition:background .25s ease, color .25s ease;
+}
+::selection{ background:var(--accent); color:var(--accent-ink); }
+/* Headings stay at full Snow — halation is a long-passage problem, not a
+   short-line one, and the brightness carries the article's hierarchy. */
+h1,h2,h3,h4{ font-weight:var(--fw-regular); margin:0; letter-spacing:var(--tracking); color:var(--ink); }
+code,kbd,samp,pre{ font-family:var(--font-mono); letter-spacing:var(--tracking-mono); }
+:focus-visible{ outline:1px solid var(--focus); outline-offset:3px; }
+
+a{ color:var(--ink); text-decoration:underline; text-underline-offset:3px; text-decoration-color:var(--border-strong); }
+a:hover{ text-decoration-color:var(--ink); }
+
+/* ============================================================
+   ARTICLE GRID
+   One column holds the prose. Figures may break to --measure-wide.
+   Nothing else spans. No grids of cards anywhere.
+   ============================================================ */
+.article{
+  display:grid;
+  grid-template-columns:
+    minmax(var(--space-24), 1fr)
+    min(var(--measure), 100% - var(--space-48))
+    minmax(var(--space-24), 1fr);
+}
+.article > *{ grid-column:2; }
+/* The wide break, now used by the HERO FIGURE ONLY. Every other article-level
+   figure sits flush in the reading column, so the page has one deliberate
+   full-bleed moment at the top and an unbroken 680px measure thereafter.
+   Starting at grid line 2 pins the left edge flush with the column, so the
+   left gutter — where the sticky TOC lives — is never encroached on. The
+   width cap is measured against the remaining area (column + right gutter)
+   minus one page margin, so on a narrow desktop the figure extends less
+   rather than reaching the viewport edge; at mobile it collapses to the
+   column exactly. */
+.article > .wide{
+  grid-column:2 / -1;
+  width:min(var(--measure-wide), 100% - var(--space-24));
+  margin-inline:0;
+}
+
+/* ---------- top bar ---------- */
+.topbar{
+  position:sticky; top:0; z-index:40;
+  background:var(--canvas); border-bottom:1px solid var(--border);
+}
+@supports (backdrop-filter:blur(2px)){
+  .topbar{ background:color-mix(in srgb, var(--canvas) 88%, transparent); backdrop-filter:blur(10px); }
+}
+.topbar-inner{
+  max-width:var(--measure-wide); margin:0 auto; padding:0 var(--space-24);
+  height:64px; display:flex; align-items:center; justify-content:space-between; gap:16px;
+}
+/* A label, not a link — there is no portfolio index to return to yet, so the
+   "←" pseudo-element and the hover colour were removed along with the href.
+   An arrow that goes nowhere is worse than no arrow. */
+.brand{
+  font-family:var(--font-mono); font-size:var(--text-caption);
+  letter-spacing:var(--tracking-mono); color:var(--ink-2);
+  display:inline-flex; align-items:center; gap:8px;
+}
+.topbar .right{ display:flex; align-items:center; gap:12px; }
+.topbar .role{
+  font-family:var(--font-mono); font-size:var(--text-caption);
+  letter-spacing:var(--tracking-mono); color:var(--ink-3);
+}
+.theme-toggle{
+  background:transparent; border:1px solid var(--ghost-border);
+  border-radius:var(--radius-pill); width:34px; height:34px;
+  cursor:pointer; color:var(--ink-2);
+  display:inline-flex; align-items:center; justify-content:center;
+  transition:border-color .15s ease, color .15s ease;
+}
+.theme-toggle:hover{ border-color:var(--stroke-art); color:var(--ink); }
+.theme-toggle svg{ width:15px; height:15px; }
+[data-theme="dark"]  .icon-sun{ display:none; }
+[data-theme="light"] .icon-moon{ display:none; }
+
+/* ---------- table of contents — desktop only, quiet ----------
+   Fixed and anchored to the reading column's left edge. It only appears
+   once there is genuinely room beside the 680px measure: below 1160px the
+   block would collide with the viewport edge, so it is not rendered. */
+.toc{ display:none; }
+@media (min-width:1160px){
+  .toc{
+    display:block; position:fixed; z-index:30;
+    top:120px;
+    right:calc(50% + (var(--measure) / 2) + 36px);
+    width:170px;
+    max-height:calc(100vh - 180px);
+    overflow-y:auto;
+  }
+}
+.toc ul{ list-style:none; margin:0; padding:0; }
+.toc li + li{ margin-top:14px; }
+.toc a{
+  display:block; padding-left:12px;
+  border-left:2px solid transparent;
+  font-size:13px; line-height:1.45; letter-spacing:var(--tracking);
+  color:var(--ink-3); text-decoration:none;
+  transition:color .15s ease, border-color .15s ease;
+}
+.toc a:hover{ color:var(--ink-2); }
+.toc a.active{
+  color:var(--ink); font-weight:var(--fw-medium);
+  border-left-color:var(--accent-mark);
+}
+
+/* ---------- masthead ---------- */
+.masthead{ padding:var(--space-24) 0 0; }   /* top gap == the article's 24px horizontal gutter */
+.kicker{
+  font-family:var(--font-mono); font-size:var(--text-caption);
+  letter-spacing:var(--tracking-mono); text-transform:uppercase;
+  color:var(--ink-3); margin:0 0 var(--space-24);
+}
+h1.title{
+  font-size:clamp(30px, 5.4vw, var(--text-title));
+  line-height:1.08; margin:0 0 14px;
+}
+.deck{
+  font-size:var(--text-lede); line-height:1.42;
+  color:var(--ink-2); margin:0;
+}
+/* Byline — title metadata. Sits tight under the h1 so it groups with the
+   title rather than splitting the subtitle from the lede. Plain muted mono:
+   no box, no highlight. --ink-3 clears AA on the canvas (5.11 light / 5.36
+   dark) — the earlier 4.44 problem was against the raised panel, now gone. */
+.byline{
+  margin:0 0 var(--space-32);
+  font-family:var(--font-mono); font-size:var(--text-caption);
+  letter-spacing:var(--tracking-mono); line-height:1.6;
+  color:var(--ink-3);
+}
+
+/* ---------- prose ---------- */
+p{ margin:0 0 var(--gap-para); }   /* governs NESTED contexts; article children are zeroed below */
+.lede{ font-size:var(--text-lede); line-height:1.5; color:var(--ink-body); }
+
+/* ---------- disclosure notice ----------
+   A floating toast pinned to the bottom of the viewport. It lives OUTSIDE
+   <article> on purpose: as an article child the rhythm rules would hand it a
+   28px margin-top, and a margin on a fixed element offsets the resolved inset
+   — the bar would sit 28px lower than `bottom` asks for.
+   Centred by left+right insets plus `margin-inline:auto`; no transform, so
+   nothing here becomes a containing block for other fixed descendants.
+   z-index sits under the modal (100) so an open deep-dive covers it, and the
+   page keeps a JS-measured bottom padding so the footer clears the bar. */
+.disclosure{
+  position:fixed; z-index:50;
+  left:var(--space-24); right:var(--space-24); bottom:var(--space-24);
+  margin-inline:auto; max-width:var(--measure-modal);
+  display:flex; align-items:flex-start; gap:var(--space-16);
+  padding:14px 12px 15px var(--space-24);
+  background:var(--notice-bg);
+  border:1px solid var(--notice-border);
+  border-radius:14px;
+  box-shadow:var(--shadow-modal);
+  font-size:13px; line-height:1.5; color:var(--notice-ink);
+}
+.disclosure-text{ flex:1; min-width:0; }
+.disclosure-title{
+  font-size:14px; font-weight:600; line-height:1.35;
+  color:var(--notice-title); margin:0 0 3px;
+}
+/* [hidden] has to be restated: the UA sheet's `display:none` for [hidden] is a
+   type-level rule, so the class's `display:flex` beats it and dismissing
+   would silently do nothing. */
+.disclosure[hidden]{ display:none; }
+.disclosure p{ margin:0; }
+/* 28px box around a 13px glyph — the mark stays small while the hit area
+   clears the 24x24 minimum (WCAG 2.5.8) with room to spare. */
+.disclosure-x{
+  flex:none; width:28px; height:28px; align-self:flex-start;
+  display:grid; place-items:center;
+  background:none; border:0; border-radius:var(--radius-pill);
+  color:var(--notice-x); cursor:pointer;
+}
+.disclosure-x svg{ width:13px; height:13px; }
+.disclosure-x:hover{ color:var(--notice-ink); }
+.disclosure-x:focus-visible{ outline:2px solid var(--notice-border); outline-offset:2px; }
+
+@media (max-width:720px){
+  .disclosure{
+    left:var(--space-16); right:var(--space-16); bottom:var(--space-16);
+    gap:8px; padding:12px 8px 12px var(--space-16); border-radius:12px;
+  }
+}
+@media (prefers-reduced-motion:no-preference){
+  .disclosure{ animation:notice-rise .32s ease-out both; }
+}
+@keyframes notice-rise{
+  from{ opacity:0; transform:translateY(12px); }
+  to  { opacity:1; transform:none; }
+}
+strong,b{ font-weight:var(--fw-medium); }
+.code-inline{
+  font-family:var(--font-mono); font-size:0.8em;
+  letter-spacing:var(--tracking-mono);
+  background:var(--surface-raised); border:1px solid var(--border);
+  color:var(--ink); padding:2px 7px; border-radius:var(--radius-input);
+  white-space:nowrap;
+}
+
+/* ---------- section headings — lime marker, hugging the text ----------
+   The highlight is an INLINE background so it wraps the words and stops
+   where they stop; box-decoration-break:clone re-applies the padding and
+   radius to every wrapped line. Identical in both modes — the accent is
+   only ever a fill with dark ink on it, which reads on either canvas. */
+.sec{ scroll-margin-top:104px; }
+.sec h2{
+  display:inline;
+  /* Zero vertical padding is deliberate. Manrope's inline content area is
+     ~1.375em — far taller than its cap height — so the lime still sits proud
+     of the letters without any padding, and a wrapped heading's blocks clear
+     each other at any line-height >= 1.375. Adding vertical padding pushes
+     that floor above 1.5 and silently reintroduces overlap. */
+  font-size:var(--text-h2); line-height:1.45;
+  /* Text is --ink, not --accent-ink: the 30% wash lands pale over the light
+     canvas but dark over the dark one, so the label has to flip with the
+     mode. Dark ink on the dark-mode wash would measure only 2.16:1. */
+  background:var(--accent-wash); color:var(--ink);
+  padding:0 8px; border-radius:3px;
+  -webkit-box-decoration-break:clone;
+          box-decoration-break:clone;
+}
+h3.sub{
+  font-size:var(--text-subhead); line-height:1.4;
+  font-weight:var(--fw-medium); color:var(--ink);
+}
+/* Decision-box title — the anchor for a whole box of content. Deliberately
+   NOT given the lime wash: that marker stays exclusive to .sec h2, so the
+   "section vs item-within-section" distinction survives. These outrank body
+   copy by size and weight alone. Tighter leading than h3.sub because the
+   larger size no longer needs 1.4 to breathe. */
+.dbox-title{
+  font-size:var(--text-dbox-title); line-height:1.3;
+  font-weight:var(--fw-medium); color:var(--ink);
+  letter-spacing:var(--tracking);
+}
+
+/* ---------- stat card: label + row as one self-contained unit ----------
+   Same card rule as the A/B/C cluster: the canvas colour, defined only by a
+   hairline. The card border now does the separating, so the row's own
+   top/bottom rules come off inside it. */
+.stat-card{
+  background:var(--canvas);
+  border:1px solid var(--border);
+  border-radius:var(--radius-card);
+  padding:22px;
+}
+.stat-card .kicker{ margin:0 0 16px; }
+.stat-card .figures{ border:0; padding:0; }
+
+/* ---------- marquee track ----------
+   display:contents on desktop means the track has no box at all — the stats
+   stay direct flex children of the row, so the desktop layout is untouched
+   and the duplicate copy never exists there. On mobile it becomes a real
+   flex row that can be translated.
+   Travel distance: the track holds two identical copies, so one copy plus
+   one gap is (50% + half a gap). Landing exactly there puts copy 2's first
+   stat where copy 1's was — the reset is invisible. */
+.rail-track{ display:contents; }
+@keyframes rail-drift{
+  from{ transform:translateX(0); }
+  to  { transform:translateX(calc(-50% - (var(--space-32) / 2))); }
+}
+
+/* ---------- stat rail: the row plus its scroll affordance ----------
+   The fade must sit ON TOP of the stats, so it is an overlay on a positioned
+   wrapper — a background gradient would paint behind the text and fade
+   nothing. Visibility is driven by a tiny scroll handler, because CSS alone
+   cannot tell whether there is more content to scroll to. */
+.stat-rail{ position:relative; }
+.stat-rail::before,
+.stat-rail::after{
+  content:''; position:absolute; top:1px; bottom:1px; width:44px;
+  pointer-events:none; opacity:0; transition:opacity .18s ease; z-index:1;
+}
+.stat-rail::before{ left:0;  background:linear-gradient(to right, var(--canvas), transparent); }
+.stat-rail::after { right:0; background:linear-gradient(to left,  var(--canvas), transparent); }
+.stat-rail.scrollable:not(.at-start)::before{ opacity:1; }
+.stat-rail.scrollable:not(.at-end)::after{ opacity:1; }
+
+/* ---------- the one inline figures row — hairline bounded ---------- */
+.figures{
+  display:flex; flex-wrap:wrap; gap:var(--space-40) var(--space-64);
+  border-top:1px solid var(--border); border-bottom:1px solid var(--border);
+  padding:var(--space-24) 0;
+}
+.figures .f-num{
+  display:block; font-size:var(--text-subheading); line-height:1.3;
+  font-weight:var(--fw-medium); color:var(--ink);
+  font-variant-numeric:tabular-nums; letter-spacing:var(--tracking);
+}
+.figures .f-lab{
+  display:block; font-size:var(--text-caption); line-height:1.4;
+  color:var(--ink-3); margin-top:4px;
+}
+.arrow{ color:var(--ink-3); margin:0 5px; }
+
+/* ---------- A/B/C cluster — compact stacked units, single column ----------
+   No rules, no boxes, no per-item padding. The letter and the heading share
+   one line (both inline, so they baseline-align for free), the two lines of
+   copy sit tight underneath, and 24px separates one unit from the next. */
+.inline-list{ padding:0; list-style:none; }
+/* Card = the canvas colour, defined only by its hairline. No fill, no shadow —
+   the same rule every other surface on the page follows. */
+.inline-list > li{
+  background:var(--canvas);
+  border:1px solid var(--border);
+  border-radius:var(--radius-card);
+  padding:20px;
+}
+.inline-list > li + li{ margin-top:14px; }
+.il-head{ display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+.il-icon{
+  flex:0 0 34px; width:34px; height:34px;
+  background:var(--surface-raised);
+  border:1px solid var(--border);
+  border-radius:var(--radius-input);
+  display:inline-flex; align-items:center; justify-content:center;
+  color:var(--ink-2);   /* icons inherit this via currentColor — monochrome, never lime */
+}
+.il-icon svg{ width:18px; height:18px; display:block; }
+.inline-list .il-title{
+  font-size:var(--text-subheading); font-weight:var(--fw-medium);
+  color:var(--ink); line-height:1.3;
+}
+/* The two description lines per card — a real <ul>, so it announces as a
+   list rather than two loose sentences. Grid gives the hanging indent for
+   free: the marker is column 1, the text becomes an anonymous item in
+   column 2, so a wrapped line starts under the TEXT and never under the
+   bullet. (text-indent tricks and list-style-position:inside both fail that.) */
+.il-points{ list-style:none; margin:0; padding:0; }
+.il-points > li{
+  display:grid; grid-template-columns:auto 1fr; column-gap:9px;
+  font-size:var(--text-nested); line-height:1.6; color:var(--ink-2);
+}
+.il-points > li + li{ margin-top:4px; }
+/* --ink-3 against the text's --ink-2: a faint guide, not a mark. */
+.il-points > li::before{ content:"\2022"; color:var(--ink-3); }
+
+/* ---------- pull quote — the diagnosis line that breathes ---------- */
+.pull{
+  padding-left:var(--space-32);
+  border-left:2px solid var(--accent-mark);
+  font-size:var(--text-pull); line-height:1.4;
+  color:var(--ink); letter-spacing:var(--tracking);
+}
+
+/* ---------- direction box — the paired design-principle statements ----------
+   A distinct component from .pull, not a variant of it. The ONLY unbordered
+   surface on the page: it is defined purely by the recessed fill sitting a
+   step below the canvas, so it reads as a depression rather than an object.
+   Type runs against the usual grain — the message is the LARGE element and
+   the label is the small bright one, so the eye lands on the label and then
+   falls into the statement.
+   Content is --ink-2, never --ink-body: in light mode --ink-body IS --ink,
+   which would collapse label and message onto the same colour. */
+.dirbox{
+  background:var(--surface-sunken);
+  border-radius:var(--radius-card);
+  padding:var(--space-24);
+}
+/* Icon sits ABOVE the label, not inline: at 26px it is larger than the 16px
+   label, and set beside it the glyph would out-weigh the words. Stacked, it
+   reads as a marker over its caption. currentColor ties it to the label, so
+   it inverts with the mode for free. */
+.dirbox .dir-icon{
+  display:block; width:26px; height:26px; margin:0 0 10px;
+}
+.dirbox .dir-label{
+  margin:0 0 14px;
+  font-size:var(--text-nested); line-height:1.4;
+  font-weight:var(--fw-medium); color:var(--ink);
+  letter-spacing:var(--tracking);
+}
+/* a second message paragraph is part of the same statement — bound tighter
+   than prose spacing so the box still reads as one block */
+.dirbox .dir-msg + .dir-msg{ margin-top:12px; }
+.dirbox .dir-msg{
+  margin:0;
+  font-size:var(--text-subhead); line-height:1.5;
+  font-weight:var(--fw-regular); color:var(--ink-2);
+}
+
+/* ---------- figures in the flow ---------- */
+.fig-media{
+  background:var(--surface-art); border:1px solid var(--border);
+  border-radius:var(--radius-card); padding:var(--space-32);
+  color:var(--stroke-art);
+}
+.fig-media svg{ display:block; width:100%; height:auto; }
+.fig-media.plain{ background:var(--surface); }
+figcaption{
+  font-size:var(--text-body-sm); line-height:1.55; color:var(--ink-3);
+  margin-top:var(--space-16); max-width:var(--measure);
+  /* a caption may carry an unbreakable token (a long marker, a URL). Without
+     this it overflows its column and drags horizontal scroll onto the page. */
+  overflow-wrap:break-word;
+}
+/* The label ran in mono at 0.100em tracking. Everywhere else that treatment sits
+   on a 12px uppercase eyebrow, where wide tracking is doing structural work; here
+   it landed on a 14px sentence-case word inside running prose, which read as
+   decoration rather than as a label. It now inherits figcaption's own sans face
+   and tracking, and separates from the caption text by weight and one step of ink. */
+figcaption .cap-n{
+  font-weight:var(--fw-medium); color:var(--ink-2); margin-right:8px;
+}
+.slot{
+  display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:var(--space-24);
+}
+/* Aspect-locked placeholder frame — reserves realistic space at a wide-image
+   ratio. Frame, hairline, radius and centring come from .fig-media + .slot.
+   .box-slot sits inside a decision box, where .dbox .fig-media already returns
+   the panel to the canvas colour (--surface-art lands 1.03:1 on the box tint
+   in light — invisible). */
+.box-slot{ aspect-ratio:16 / 9; overflow:hidden; }
+.box-slot svg{ min-height:0; max-height:100%; }
+
+/* ---------- theme-paired bitmaps ----------
+   Some figures ship as two exports, one drawn for each canvas: strokes that
+   read on white are invisible on obsidian and vice versa, so a single file
+   cannot serve both. Both sit in the DOM; only the active mode's is shown. */
+.shot-img{ display:block; width:100%; height:auto; }
+[data-theme="light"] .shot-img-dark{ display:none; }
+[data-theme="dark"]  .shot-img-light{ display:none; }
+
+/* The hero keeps the art-panel ground like every other figure slot, but drops
+   padding so the dashboard bleeds to the frame edge as the export intends. */
+.hero-shot{ padding:0; overflow:hidden; }
+
+/* Bitmap figures other than the hero: the default 32px mat shrank the artwork
+   to ~89% of its frame. A slim, even pad keeps the hairline off the image
+   without spending a tenth of the width on empty margin. */
+.shot-frame{ padding:16px; }
+
+.slot .slot-label{
+  font-family:var(--font-mono); font-size:var(--text-caption);
+  letter-spacing:var(--tracking-mono); color:var(--ink-3); text-align:center;
+}
+/* the transition arrow inside before/after figures */
+.fig-arrow{ color:var(--accent-mark); }
+
+/* before/after pairing inside one figure — these SVGs carry intrinsic
+   sizes and must NOT be stretched by the generic full-width rule */
+.ba{
+  display:flex; align-items:center; justify-content:center;
+  gap:var(--space-32); flex-wrap:wrap;
+}
+.fig-media .ba svg{ width:auto; max-width:100%; height:auto; flex:0 1 auto; }
+.ba .ba-arrow{ font-size:20px; color:var(--accent-mark); line-height:1; }
+
+/* ============================================================
+   DECISION BOXES — the three workstreams of section 03
+   The single deliberate deviation from the canvas-card rule: a tinted
+   fill so each workstream reads as one self-contained block. Everything
+   else holds — 1px hairline, 16px radius, no shadow.
+   Each box carries its own internal rhythm, because .article's pair rules
+   only reach direct children and these are now grandchildren.
+   ============================================================ */
+.dbox{
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-card);
+  padding:var(--space-32);
+}
+.dbox > *{ margin-top:0; margin-bottom:0; }
+.dbox > * + *{ margin-top:var(--gap-para); }
+.dbox > :where(.dbox-title, h3.sub) + *{ margin-top:var(--gap-subhead-after); }
+/* the lead-in ends on a colon — it introduces the list, so it binds to it */
+.dbox > * + :where(.mod-list){ margin-top:var(--gap-subhead-after); }
+.dbox > * + :where(.pull, .deep-open){ margin-top:var(--gap-block); }
+.dbox > :where(.pull) + *{ margin-top:var(--gap-block); }
+.dbox > * + :where(figure){ margin-top:var(--gap-figure); }
+.dbox > :where(figure) + *{ margin-top:var(--gap-figure); }
+/* Figures inside a box fit the box. No left-break, no right-break — the
+   article's .wide rule targets direct children only, so nothing here spans. */
+.dbox figure{ width:auto; margin-inline:0; }
+/* On the canvas, the art panel is one step DOWN from its ground (240 on 251
+   light, 13 on 18 dark). Inside a tinted box the light pair would land 3 units
+   apart — flat. Returning the panel to the canvas colour restores the same
+   one-step read in both modes, now inset upward in light and downward in dark.
+   Tonal only: no diagram geometry, stroke or label changes. */
+.dbox .fig-media{ background:var(--canvas); }
+/* …but a dialog's own ground IS the canvas, so inside a modal that override
+   makes the frame vanish into the panel. --surface-sunken instead: it steps
+   the same subtle amount in BOTH modes (1.098:1 dark / 1.092:1 light),
+   whereas --surface-art reads 1.10 in light but a barely-there 1.04 in dark.
+   Declared after the rule above — equal specificity, so order decides. */
+.modal .fig-media{ background:var(--surface-sunken); }
+/* The before/after pair needs 604px to sit side by side; a box gives it 550.
+   Left as a wrapping row the arrow strands beside the "before" state and the
+   transition stops reading. Stacking is what the mobile rule already does —
+   same treatment, one width earlier. */
+.dbox .ba{ flex-direction:column; gap:var(--space-16); }
+.dbox .ba .ba-arrow{ transform:rotate(90deg); }
+
+/* ---------- workstream groups — a scannable definition list ----------
+   Two columns on desktop so the six group names stack into one vertical
+   edge the eye can run down; one column on mobile, where a 170px name
+   column would leave the modules too narrow to read. Hairlines separate
+   the rows — no bullets, no cards: a card per group inside an already
+   tinted box would be a box in a box. */
+/* No margin reset here: .dbox > * already zeroes it, and re-declaring it at
+   equal specificity LATER in the file would silently beat the pair rule that
+   sets the gap under the lead-in. */
+.mod-list{ list-style:none; padding:0; }
+.mod-list > li{
+  /* 184px, not 170: the widest name ("Scheme Management") sets 161px, and a
+     9px margin would wrap it during the webfont swap. 23px absorbs that. */
+  display:grid; grid-template-columns:184px 1fr; gap:var(--space-24);
+  align-items:start;
+  padding:14px 0; border-top:1px solid var(--border);
+}
+.mod-list > li:first-child{ border-top:0; padding-top:0; }
+.mod-list > li:last-child{ padding-bottom:0; }
+.mod-name{
+  font-size:var(--text-nested); line-height:1.5;
+  font-weight:var(--fw-medium); color:var(--ink);
+}
+.mod-items{ font-size:var(--text-nested); line-height:1.6; color:var(--ink-2); }
+
+/* ---------- deep-dive trigger — solid neutral action button ----------
+   Filled with --ink and lettered in --canvas: the strongest affordance the
+   system has that is NOT the accent. Lime stays rationed to the one closing
+   burst; this button earns its weight from the neutral ramp instead.
+   Sentence case, sans, 500 — uppercase mono read as a label, not a control.
+   The pill is sized by its own short text, so it never becomes a wide bar. */
+.deep-open{
+  display:inline-flex; align-items:center; gap:10px;
+  background:var(--ink); color:var(--canvas);
+  border:0; border-radius:var(--radius-pill);
+  padding:12px 22px; cursor:pointer; text-align:left;
+  font-family:var(--font-sans); font-size:var(--text-body-sm);
+  font-weight:var(--fw-medium); letter-spacing:var(--tracking);
+  line-height:1.3;
+  transition:opacity .15s ease;
+}
+.deep-open:hover{ opacity:.88; }
+.deep-open .arw{ transition:transform .15s ease; }
+.deep-open:hover .arw{ transform:translateX(3px); }
+@media (prefers-reduced-motion:reduce){
+  .deep-open .arw{ transition:none; }
+  .deep-open:hover .arw{ transform:none; }
+}
+
+/* ---------- deep-dive modal ----------
+   The one place --shadow-modal is allowed: a floating layer genuinely
+   detached from the page needs the depth cue that flat surfaces don't. */
+.modal[hidden]{ display:none; }
+/* The dialog is a child of its box, so the box's rhythm rule reaches it. A
+   margin on a fixed element is NOT inert — it offsets the resolved inset,
+   which left a 28px unscrimmed band across the top of the viewport. */
+.dbox > .modal{ margin:0; }
+.modal{
+  position:fixed; inset:0; z-index:100;
+  display:flex; align-items:center; justify-content:center;
+  padding:var(--space-24);
+}
+.modal-scrim{ position:absolute; inset:0; background:var(--scrim); }
+.modal-panel{
+  position:relative;
+  width:min(var(--measure-modal), 100%);
+  max-height:calc(100vh - var(--space-48));
+  display:flex; flex-direction:column;
+  background:var(--canvas);
+  border:1px solid var(--border); border-radius:var(--radius-card);
+  box-shadow:var(--shadow-modal);
+}
+.modal-head{
+  flex:0 0 auto; display:flex; align-items:center; gap:var(--space-16);
+  justify-content:space-between;
+  padding:var(--space-24) var(--space-32);
+  border-bottom:1px solid var(--border);
+}
+.modal-title{
+  margin:0; font-family:var(--font-mono); font-size:var(--text-caption);
+  letter-spacing:var(--tracking-mono); text-transform:uppercase;
+  color:var(--ink-2); line-height:1.5;
+}
+.modal-x{
+  flex:0 0 32px; width:32px; height:32px;
+  background:transparent; border:1px solid var(--ghost-border);
+  border-radius:var(--radius-pill); cursor:pointer; color:var(--ink-2);
+  display:inline-flex; align-items:center; justify-content:center;
+  transition:border-color .15s ease, color .15s ease;
+}
+.modal-x:hover{ border-color:var(--stroke-art); color:var(--ink); }
+.modal-x svg{ width:14px; height:14px; display:block; }
+/* Focus lands here on open so the dialog's own name is announced. It is a
+   container, not a control, so it shows no ring — the trap does the work. */
+.modal-panel:focus{ outline:none; }
+/* tabindex=0 in the markup: a scroll region that keyboard users cannot reach
+   is content they cannot read. Focused, it takes arrow keys and PageDown. */
+.modal .deep-body{ overflow-y:auto; padding:var(--space-32); }
+
+.deep-body{ padding:var(--space-32) var(--space-24) var(--space-24); }
+.deep-body > *:last-child{ margin-bottom:0; }
+.deep-body p{ font-size:var(--text-nested); line-height:1.6; color:var(--ink-2); }
+.deep-body h4{
+  font-family:var(--font-mono); font-size:var(--text-caption);
+  letter-spacing:var(--tracking-mono); text-transform:uppercase;
+  color:var(--ink-3); margin:var(--space-40) 0 var(--space-16); font-weight:var(--fw-medium);
+}
+.deep-body h4:first-child{ margin-top:0; }
+.deep-body h5{
+  font-size:var(--text-body); font-weight:var(--fw-medium);
+  color:var(--ink); margin:var(--space-32) 0 var(--space-8);
+}
+.deep-body figure{ margin:var(--space-32) 0; }
+/* Modal sub-headings carry the same lime marker as the section anchors, but
+   the highlight sits on an INNER span: h4 must stay display:block or its
+   40px/16px margins vanish (inline boxes ignore vertical margin), whereas
+   .sec h2 can be inline because its parent .sec div owns the spacing. */
+.deep-body h4 .mark{
+  display:inline;
+  background:var(--accent-wash); color:var(--ink);
+  padding:0 8px; border-radius:3px;
+  -webkit-box-decoration-break:clone;
+          box-decoration-break:clone;
+}
+/* the partner's verbatim ask — decorative mark, then the ask as four points */
+/* Narration, not the partner's words — so it sits ABOVE the quotation mark
+   and runs quieter than the quoted bullets. --ink-2, never --ink-body: in
+   light mode --ink-body IS --ink, which would flatten it against the quote. */
+.deep-body blockquote .q-intro{
+  margin:0 0 16px;
+  font-size:var(--text-nested); line-height:1.6;
+  color:var(--ink-2);
+}
+.deep-body blockquote .q-mark{
+  display:block; font-family:var(--font-sans);
+  font-size:44px; line-height:0.7; color:var(--ink-3);
+  margin:0 0 14px;
+}
+.q-points{ list-style:none; margin:0; padding:0; }
+.q-points > li{
+  display:grid; grid-template-columns:auto 1fr; column-gap:9px;
+  color:var(--ink);
+}
+.q-points > li + li{ margin-top:10px; }
+.q-points > li::before{ content:"\2022"; color:var(--ink-3); }
+
+.deep-body blockquote{
+  margin:var(--space-24) 0; padding:var(--space-24);
+  border:1px solid var(--border); border-radius:var(--radius-card);
+  background:var(--surface-raised);
+  font-size:var(--text-nested); line-height:1.6; color:var(--ink-body);
+}
+.deep-body blockquote p{ color:var(--ink); margin:0 0 10px; }
+.deep-body blockquote p:last-child{ margin-bottom:0; }
+
+/* ---------- charts ---------- */
+.chart{ width:100%; height:auto; display:block; }
+.lt-bars{ display:flex; align-items:flex-end; gap:var(--space-24); height:150px; }
+.lt-bar-wrap{ flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%; }
+.lt-bar{ width:100%; background:var(--ink); position:relative; }
+.lt-bar .val{
+  position:absolute; top:-26px; left:0; right:0; text-align:center;
+  font-size:var(--text-body-sm); font-weight:var(--fw-medium);
+  color:var(--ink); font-variant-numeric:tabular-nums;
+}
+.lt-labels{ display:flex; gap:var(--space-24); margin-top:12px; }
+.lt-labels span{ flex:1; text-align:center; font-size:var(--text-caption); color:var(--ink-3); }
+
+/* ---------- end matter ---------- */
+.note{
+  border-top:1px solid var(--border); padding-top:var(--space-24);
+  font-size:var(--text-body-sm); line-height:1.6; color:var(--ink-3);
+}
+.burst{
+  background:var(--accent); color:var(--accent-ink);
+  border-radius:var(--radius-card);
+  padding:var(--space-64) var(--space-48);
+}
+.burst .b-kicker{
+  font-family:var(--font-mono); font-size:var(--text-caption);
+  letter-spacing:var(--tracking-mono); text-transform:uppercase;
+  color:var(--accent-ink); opacity:.66; margin:0 0 var(--space-16);
+}
+.burst h2{
+  font-size:var(--text-heading-sm); line-height:1.32;
+  color:var(--accent-ink); margin:0 0 var(--space-16);
+}
+.burst p{ font-size:var(--text-body); line-height:1.6; color:var(--accent-ink); opacity:.8; margin:0 0 var(--space-32); }
+.btn{
+  font-family:var(--font-sans); font-size:var(--text-body-sm);
+  font-weight:var(--fw-medium); letter-spacing:var(--tracking);
+  padding:8px 16px; border-radius:var(--radius-pill);
+  border:1px solid transparent; cursor:pointer; text-decoration:none;
+  display:inline-flex; align-items:center; gap:8px;
+  background:var(--accent-ink); color:var(--accent);
+  transition:background .15s ease;
+}
+.btn:hover{ background:#000; }
+footer{
+  border-top:1px solid var(--border);
+  padding:var(--space-32) 0 var(--space-96);
+}
+footer p{
+  font-family:var(--font-mono); font-size:var(--text-caption);
+  letter-spacing:var(--tracking-mono); color:var(--ink-3); margin:0;
+}
+
+/* ============================================================
+   DIAGRAM PRIMITIVES — every stroke/fill/label resolves through
+   a token, so all figures invert with the mode. Monochrome.
+   ============================================================ */
+.dg-connector{ stroke:var(--stroke-art); fill:none; }
+.dg-line{      stroke:var(--border-strong); fill:none; }
+.dg-line-ink{  stroke:var(--ink); fill:none; }
+.dg-box{       fill:var(--surface); stroke:var(--border-strong); }
+.dg-box-hi{    fill:var(--surface-raised); stroke:var(--ink); }
+.dg-fill-ink{  fill:var(--ink); stroke:none; }
+.dg-ring{      fill:var(--ink); stroke:var(--surface-art); }
+.dg-t{     font-family:var(--font-mono); fill:var(--ink);   letter-spacing:0; }
+.dg-t2{    font-family:var(--font-mono); fill:var(--ink-3); letter-spacing:0; }
+.dg-t-sub{ font-family:var(--font-sans); fill:var(--ink-3); letter-spacing:0; }
+
+/* ============================================================
+   VERTICAL RHYTHM
+   .article is a grid container, so adjacent margins NEVER collapse
+   — a top+bottom pair would sum. Convention: article children carry
+   NO margin of their own; each gap is declared exactly once by the
+   pair rule below. Every selector is specificity (0,1,0) via
+   :where(), so resolution is pure source order — later wins.
+   Scale: line 28.8 -> para 28 -> block 48 -> figure 56 -> section 80
+   ============================================================ */
+/* margin, not margin-block: <figure> carries a UA default of `1em 40px`, so
+   zeroing only top/bottom leaves a 40px inline inset that pulls figures off
+   the column. .wide used to mask this by setting margin-inline itself. */
+.article > *{ margin:0; }
+
+/* 1 — baseline: paragraph to paragraph */
+.article > * + *{ margin-top:var(--gap-para); }
+
+/* 2 — blocks that claim air above them */
+.article > * + :where(.stat-rail, .stat-card, .inline-list, .note, h3.sub, .pull, footer, .kicker){
+  margin-top:var(--gap-block);
+}
+/* 3 — and the air they leave below */
+.article > :where(.stat-rail, .stat-card, .inline-list, .note, .pull) + *{
+  margin-top:var(--gap-block);
+}
+
+/* 3b — the three decision boxes. Their own register, declared after 2/3 so it
+        wins on both sides: they need to read as separated blocks, not as
+        paragraphs and not as full section breaks. */
+.article > * + :where(.dbox){ margin-top:var(--gap-dbox); }
+.article > :where(.dbox) + *{ margin-top:var(--gap-dbox); }
+
+/* 3c — the two direction boxes are ONE statement pair: full block air around
+        the pair, a tight seam between them so they group visually. The seam
+        rule is declared last so it beats the block rule above. */
+.article > * + :where(.dirbox){ margin-top:var(--gap-block); }
+.article > :where(.dirbox) + *{ margin-top:var(--gap-block); }
+.article > :where(.dirbox) + :where(.dirbox){ margin-top:var(--space-16); }
+
+/* 4 — figures sit symmetrically; overrides the 48 register both ways */
+.article > * + :where(figure){ margin-top:var(--gap-figure); }
+.article > :where(figure) + *{ margin-top:var(--gap-figure); }
+
+/* 5 — section-level breaks. Declared after everything else so the gap
+       above a section is uniform no matter what precedes it. */
+.article > * + :where(.sec, .burst){ margin-top:var(--gap-section); }
+
+/* 6 — headings bind tightly to the content they introduce */
+.article > :where(.sec) + *{ margin-top:var(--gap-sec-after); }
+.article > :where(h3.sub) + *{ margin-top:var(--gap-subhead-after); }
+/* an eyebrow label binds to the block it frames, same as a sub-heading */
+.article > :where(.kicker) + *{ margin-top:var(--gap-subhead-after); }
+
+/* 7 — a pull-quote is not "the first paragraph": it keeps its own
+       symmetric 48 even when it directly follows a sub-heading. */
+.article > :where(h3.sub) + :where(.pull){ margin-top:var(--gap-block); }
+
+@media (max-width:720px){
+  :root{
+    --text-h2:24px;      /* must shrink: otherwise headings read LARGER
+                            relative to body on mobile than on desktop */
+    --text-lede:18px;
+    --text-pull:18px;
+    --text-prose:17px;
+    --text-nested:15px;  /* stays below body so the deep-dive distinction survives */
+    --gap-block:40px; --gap-figure:48px; --gap-section:64px;
+    --gap-dbox:24px;
+    /* 22, not 20 (would stay tied to body copy) and not 24 (would tie
+       with the section h2 at this breakpoint). */
+    --text-dbox-title:22px;
+  }
+  .dbox{ padding:var(--space-24); }
+  .dirbox{ padding:20px; }
+  /* 292px of inner width cannot carry a 170px name column: stack instead,
+     with a tight gap so each name still owns the modules beneath it. */
+  .mod-list > li{ grid-template-columns:1fr; gap:4px; }
+  .modal{ padding:var(--space-16); }
+  .modal-panel{ max-height:calc(100vh - var(--space-32)); }
+  .modal-head{ padding:var(--space-16) var(--space-24); }
+  .modal .deep-body{ padding:var(--space-24) var(--space-16); }
+  h1.title{ font-size:30px; }
+  /* h2 needs no mobile override any more — the base rule already uses the
+     zero-padding / 1.45 formula that clears wrapped lines at every size. */
+  body{ font-size:var(--text-prose); }
+  .pull{ padding-left:var(--space-24); }
+  /* Stats become ONE horizontally-scrollable row — each stat stays intact,
+     nothing breaks mid-unit. The edge fade is a "scroll shadow": two
+     canvas-coloured covers painted with background-attachment:local (so they
+     travel with the content) sit ON TOP of two fades attached to the
+     scrollport. At rest the cover hides the fade; the moment there is more to
+     scroll, the cover slides away and the fade appears. So the affordance is
+     self-managing — it shows only while there is genuinely more to see, and
+     it works on both edges without any JS. */
+  .figures{
+    flex-wrap:nowrap;
+    gap:var(--space-32);
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;                    /* Firefox */
+  }
+  .figures::-webkit-scrollbar{ display:none; } /* Safari / Chrome */
+  .figures{ scroll-snap-type:x mandatory; }
+  .rail-track{ display:flex; gap:var(--space-32); flex:0 0 auto; }
+  .rail-track > div{ flex:0 0 auto; scroll-snap-align:start; }
+  /* The last stat is narrower than the scrollport, so its start edge can
+     never reach a scrollable position — under mandatory snapping that would
+     make it unreachable. Snapping its END edge keeps it available. */
+  .rail-track > div:last-child{ scroll-snap-align:end; }
+  .stat-rail.drifting .rail-track{
+    animation:rail-drift var(--rail-dur, 26s) linear infinite;
+    will-change:transform;
+  }
+  .figures .f-num, .figures .f-lab{ white-space:nowrap; }
+  .fig-media{ padding:var(--space-24) var(--space-16); }
+  /* the hero shot bleeds to its frame at every width — the rule above is
+     later in the file and would otherwise reintroduce padding here. */
+  .hero-shot{ padding:0; }
+  .shot-frame{ padding:12px; }
+  .ba{ flex-direction:column; gap:var(--space-16); }
+  .ba .ba-arrow{ transform:rotate(90deg); }
+  .burst{ padding:var(--space-40) var(--space-24); }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <span class="brand">Selected Work</span>
+    <div class="right">
+      <span class="role">Head of Product</span>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle colour mode">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2"/>
+          <line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/>
+          <line x1="2.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21.5" y2="12"/>
+          <line x1="5.3" y1="5.3" x2="7.1" y2="7.1"/><line x1="16.9" y1="16.9" x2="18.7" y2="18.7"/>
+          <line x1="5.3" y1="18.7" x2="7.1" y2="16.9"/><line x1="16.9" y1="7.1" x2="18.7" y2="5.3"/>
+        </svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+          <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<nav class="toc" id="toc" aria-label="Contents"></nav>
+
+<article class="article">
+
+  <!-- ============ MASTHEAD ============ -->
+  <header class="masthead">
+    <p class="kicker">Case Study</p>
+    <h1 class="title">Partnership System</h1>
+    <p class="byline">Head of Product · 1 PM + 4 engineers · 6 months · shipped January 2026</p>
+    <p class="deck">The infrastructure that turns partner referrals into a revenue channel</p>
+  </header>
+
+  <p class="lede">In CFD brokerage, partnership (IB - Introducing Broker) is the referral model: partners bring in clients and earn commission on their trading. It's one of the lowest marginal-cost acquisition channels in the industry, and one of the steadiest.</p>
+
+  <figure class="wide">
+    <div class="fig-media hero-shot">
+      <img class="shot-img shot-img-light" src="images/hero-light.webp"
+           width="2000" height="951" alt="Partner Area dashboard — revenue, referral tools and partnership tier progress — beside a multi-level referral tree running from the broker down through partner clients">
+      <img class="shot-img shot-img-dark" src="images/hero-dark.webp"
+           width="2000" height="951" alt="Partner Area dashboard — revenue, referral tools and partnership tier progress — beside a multi-level referral tree running from the broker down through partner clients">
+    </div>
+  </figure>
+
+  <div class="stat-card">
+    <p class="kicker">Six months after launch</p>
+    <div class="stat-rail">
+      <div class="figures">
+        <div><span class="f-num">5<span class="arrow">→</span>517</span><span class="f-lab">Partners</span></div>
+        <div><span class="f-num">6.0%<span class="arrow">→</span>11.8%</span><span class="f-lab">Share of new funded clients</span></div>
+        <div><span class="f-num">5 person-days/mo<span class="arrow">→</span>0</span><span class="f-lab">Payout reconciliation</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 01 ============ -->
+  <div class="sec">
+    <h2>Why build it</h2>
+  </div>
+
+  <p>When I returned to the broker as Head of Product, the partner business already existed — with just 5 partners — but had no system behind it at all.</p>
+
+  <p>Drawing on my experience at Exness, a top-tier company, I saw the need to bring that partnership model and system architecture back to the broker, to scale a segment with real potential.</p>
+
+  <p>The problems with the old model were clear:</p>
+
+  <ul class="inline-list">
+    <li>
+      <div class="il-head">
+        <span class="il-icon">
+          <!-- placeholder: spreadsheet grid -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="16" rx="2"/>
+            <line x1="3" y1="9" x2="21" y2="9"/>
+            <line x1="3" y1="14.5" x2="21" y2="14.5"/>
+            <line x1="9" y1="9" x2="9" y2="20"/>
+            <line x1="15" y1="9" x2="15" y2="20"/>
+          </svg>
+        </span>
+        <span class="il-title">No system</span>
+      </div>
+      <ul class="il-points">
+        <li>Partners and rewards managed in spreadsheets.</li>
+        <li>Partner relationships and schemes managed through MT5 group naming.</li>
+      </ul>
+    </li>
+    <li>
+      <div class="il-head">
+        <span class="il-icon">
+          <!-- placeholder: warning triangle -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 4 L21 19.5 L3 19.5 Z"/>
+            <line x1="12" y1="10" x2="12" y2="14"/>
+            <circle cx="12" cy="16.6" r="0.6" fill="currentColor" stroke="none"/>
+          </svg>
+        </span>
+        <span class="il-title">Operational risk</span>
+      </div>
+      <ul class="il-points">
+        <li>Only one person in the company knew how to calculate rewards manually.</li>
+        <li>Reward calculation took up to 5 days a month, and still required manual C-level review.</li>
+      </ul>
+    </li>
+    <li>
+      <div class="il-head">
+        <span class="il-icon">
+          <!-- placeholder: growth capped by a ceiling -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="3" y1="7" x2="21" y2="7" stroke-dasharray="2.5 2.5"/>
+            <path d="M3.5 19.5 C 9 19, 12 11.5, 20.5 11"/>
+          </svg>
+        </span>
+        <span class="il-title">Couldn't scale</span>
+      </div>
+      <ul class="il-points">
+        <li>No UI for partners to see their business represented.</li>
+        <li>Partner count couldn't grow.</li>
+      </ul>
+    </li>
+  </ul>
+
+  <!-- ============ 02 ============ -->
+  <div class="sec">
+    <h2>Big directions</h2>
+  </div>
+
+  <p>Partnership systems have been in this market for years. I was building one late — so I studied what already existed. I broke down what we needed internally, and drew on what I'd seen meeting partners at Exness offline seminars. The goal: learn from the strengths of other systems, and fix their weaknesses. From that, I set two main directions.</p>
+
+  <div class="dirbox">
+    <h3 class="dir-label">
+      <svg class="dir-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="5" y="5" width="12" height="12" rx="2"/>
+        <rect x="23" y="5" width="12" height="12" rx="2"/>
+        <rect x="5" y="23" width="12" height="12" rx="2"/>
+        <rect x="23" y="23" width="12" height="12" rx="2" stroke-dasharray="2.5 2.5"/>
+        <line x1="17" y1="11" x2="23" y2="11"/>
+        <line x1="11" y1="17" x2="11" y2="23"/>
+        <line x1="29" y1="17" x2="29" y2="23" stroke-dasharray="2 2"/>
+        <line x1="17" y1="29" x2="23" y2="29" stroke-dasharray="2 2"/>
+      </svg>
+      Architecture design direction
+    </h3>
+    <p class="dir-msg">The system had to scale without limits, to handle whatever partners might ask for. The infrastructure and data schema didn't need to be perfect — but they always had to leave room to adopt new requirements.</p>
+  </div>
+
+  <div class="dirbox">
+    <h3 class="dir-label">
+      <svg class="dir-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M20 5 L32 9 V20 C32 28 26 33 20 35 C14 33 8 28 8 20 V9 Z"/>
+        <path d="M15 20 L18.5 23.5 L25 16"/>
+      </svg>
+      User direction
+    </h3>
+    <p class="dir-msg">This system touches money, and the people using it — company staff — make mistakes.</p>
+    <p class="dir-msg">So it needed multiple layers of protection against user error. Guarding against careless mistakes became a key item on the development checklist.</p>
+  </div>
+
+  <!-- ============ 03 — parent section, holds decisions A / B / C ============ -->
+  <div class="sec">
+    <h2>Key decisions</h2>
+  </div>
+
+  <p>This was a demanding, genuinely interesting project. It forced a few big structural decisions — and a constant obsession with scaling without limits. Below are the two biggest decisions, then an overview of the system's main modules.</p>
+
+  <section class="dbox">
+    <h3 class="dbox-title">Rebuilding the CRM &amp; Back Office data schema</h3>
+
+    <p>We wanted to scale without limits, but the data schema at the time couldn't support that. The original system was designed to run a simple broker model — not to plug into a Partnership System with complex customization needs.</p>
+
+    <p>So I made a decision that was painful, costly, and risky, but a risk I could control: tear down most of the old structure, rebuild it, and migrate the data from scratch.</p>
+
+    <p class="pull">I wasn't willing to build on top of a weak foundation.</p>
+
+    <figure>
+      <div class="fig-media shot-frame">
+        <img class="shot-img shot-img-light" src="images/fig1-light.webp"
+             width="2000" height="1092" alt="Before and after: on the left every client in the company sits in one group sharing a single config; on the right clients are split into Client Group 1 and Client Group 2, each with its own trading and payment config, and a client can hold several account types such as Standard, Pro or Mini">
+        <img class="shot-img shot-img-dark" src="images/fig1-dark.webp"
+             width="2000" height="1092" alt="Before and after: on the left every client in the company sits in one group sharing a single config; on the right clients are split into Client Group 1 and Client Group 2, each with its own trading and payment config, and a client can hold several account types such as Standard, Pro or Mini">
+      </div>
+      <figcaption><span class="cap-n">Caption</span>Before and after: every client was treated the same, with no grouping. Client group became a first-class entity with its own configurable attributes.</figcaption>
+    </figure>
+
+    <button class="deep-open" type="button" data-modal="dm-1"
+            aria-label="Read more about this decision — rebuilding the CRM and Back Office data schema">Read more about this decision <span class="arw" aria-hidden="true">&rarr;</span></button>
+
+    <div class="modal" id="dm-1" hidden>
+      <div class="modal-scrim" data-close></div>
+      <div class="modal-panel" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="dm-1-title">
+        <div class="modal-head">
+          <p class="modal-title" id="dm-1-title">Rebuilding the CRM &amp; Back Office data schema</p>
+          <button class="modal-x" type="button" data-close aria-label="Close deep dive">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+        <div class="deep-body" tabindex="0">
+          <h4><span class="mark">The setup</span></h4>
+          <p>As covered earlier, we had to rebuild the data schema and add foundational CRM features to support the partnership system — all to meet our partners' demanding requirements. Here's a real example of what "the schema couldn't support it" looked like: a request from a large partner during negotiation.</p>
+
+          <h4><span class="mark">What the partner asked for</span></h4>
+          <blockquote>
+            <p class="q-intro">Say a partner — John, with a network of 2,000 clients large and small — wants to work with the broker, and comes in with a demanding set of requirements:</p>
+            <span class="q-mark" aria-hidden="true">&ldquo;</span>
+            <ul class="q-points">
+              <li>I want two different client groups — one with a higher trading fee, one with lower.</li>
+              <li>I want to decide which clients go into which group.</li>
+              <li>But within each group, I still want multiple account types, from low fee to high, for the client to choose from.</li>
+              <li>And for each account type, I want a different partner reward when that client trades.</li>
+            </ul>
+          </blockquote>
+
+          <figure>
+              <div class="fig-media shot-frame">
+                <img class="shot-img shot-img-light" src="images/fig2-light.webp"
+                     width="2000" height="1153" alt="John's request mapped as a hierarchy: one partner group branches into two client groups; each client group holds several account types (demo and real, standard, pro and investor); and each real account type carries its own partner scheme — a CPA amount, a rebate share, or both">
+                <img class="shot-img shot-img-dark" src="images/fig2-dark.webp"
+                     width="2000" height="1153" alt="John's request mapped as a hierarchy: one partner group branches into two client groups; each client group holds several account types (demo and real, standard, pro and investor); and each real account type carries its own partner scheme — a CPA amount, a rebate share, or both">
+              </div>
+              <figcaption><span class="cap-n">Caption</span>Here's John's request as a diagram. Back then, the system had no way to handle it — it didn't even have client groups or account types yet.</figcaption>
+            </figure>
+
+          <h4><span class="mark">Why the old schema couldn't handle this</span></h4>
+
+          <h5>Problem 1: No concept of a client group.</h5>
+          <p>Every client in the system was treated the same. There was no grouping — any change had to be hardcoded client by client.</p>
+          <p><b>Fix:</b> I introduced a client group as a first-class entity, with its own configurable attributes (exchange rate, which account types it's allowed to use, and so on). Clients get assigned to a group; a partner's clients can sit in a group built specifically for them.</p>
+
+          <h5>Problem 2: No concept of an account type.</h5>
+          <p>Trading accounts were controlled entirely through MT5 groups — the CRM itself had no definition of trading conditions at all.</p>
+          <p><b>Fix:</b> I introduced account type as a configurable entity, and linked it to client group: a given client group is restricted to a defined set of account types, each with its own spread, commission, and swap fee — from low to high.</p>
+
+          <figure>
+            <div class="fig-media shot-frame">
+              <img class="shot-img shot-img-light" src="images/fig1-light.webp"
+                   width="2000" height="1092" alt="Before and after: on the left every client in the company sits in one group sharing a single config; on the right clients are split into Client Group 1 and Client Group 2, each with its own trading and payment config, and a client can hold several account types such as Standard, Pro or Mini">
+              <img class="shot-img shot-img-dark" src="images/fig1-dark.webp"
+                   width="2000" height="1092" alt="Before and after: on the left every client in the company sits in one group sharing a single config; on the right clients are split into Client Group 1 and Client Group 2, each with its own trading and payment config, and a client can hold several account types such as Standard, Pro or Mini">
+            </div>
+          </figure>
+          <figure>
+            <div class="fig-media shot-frame">
+              <img class="shot-img shot-img-light" src="images/schemes-light.webp"
+                   width="2000" height="1092" alt="The new architecture in action: one partner group feeds two client groups; inside them each client holds several trading accounts of different types; and the account types map onto partner schemes — CPA amounts and rebate shares that differ per account type and per group">
+              <img class="shot-img shot-img-dark" src="images/schemes-dark.webp"
+                   width="2000" height="1092" alt="The new architecture in action: one partner group feeds two client groups; inside them each client holds several trading accounts of different types; and the account types map onto partner schemes — CPA amounts and rebate shares that differ per account type and per group">
+            </div>
+          </figure>
+
+          <h4><span class="mark">What this bought us</span></h4>
+          <p>This wasn't an easy call. Rebuilding meant losing time, burning effort, and taking on real operational and data risk — migration especially could go wrong in ways that hit live accounts. I sat with that trade-off for a while, but I didn't want to build the Partnership System on a foundation I already knew would collapse under it. Rebuilding first was the only path to something that could actually last.</p>
+          <p>That restructuring gave us a foundation solid enough to organize and manage clients properly — and it's exactly what the Partnership System was built on top of in the next phase. It's what lets the system satisfy every part of that partner's request, including the hardest one: a different reward for the same client, depending on which account type they trade from.</p>
+          <p>From that point on, the system could take on real customization and scale with it. A short-term risk for long-term flexibility — and it paid off.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="dbox">
+    <h3 class="dbox-title">Managing partner schemes as dynamic modules</h3>
+
+    <p>Working with partners — especially when negotiating and onboarding large ones — means they'll ask to change their scheme, customize it, or even switch it mid-run. Every large partner also comes with its own set of custom requirements.</p>
+
+    <p>So I designed the architecture to manage schemes as modules from the start, to maximize customization without needing to touch the code.</p>
+
+    <figure>
+      <div class="fig-media shot-frame">
+        <img class="shot-img shot-img-light" src="images/modules-light.webp"
+             width="2000" height="1360" alt="A partner program broken into configurable modules across four rows: the Custom IB Program at the top branches into Client Group 1 (lower fee) and Client Group 2 (higher fee); each client group offers its own account types, Standard and Pro; and each account type carries its own partner reward scheme — a CPA amount, a rebate share, or both. Individual nodes are highlighted to show that any single module can be swapped or reconfigured on its own without touching the rest.">
+        <img class="shot-img shot-img-dark" src="images/modules-dark.webp"
+             width="2000" height="1360" alt="A partner program broken into configurable modules across four rows: the Custom IB Program at the top branches into Client Group 1 (lower fee) and Client Group 2 (higher fee); each client group offers its own account types, Standard and Pro; and each account type carries its own partner reward scheme — a CPA amount, a rebate share, or both. Individual nodes are highlighted to show that any single module can be swapped or reconfigured on its own without touching the rest.">
+      </div>
+      <figcaption><span class="cap-n">Caption</span>All figures shown are illustrative.</figcaption>
+    </figure>
+
+    <p>The goal: keep every partner happy, and take on any partnership opportunity for the broker — running many customized schemes with many partners at the same time.</p>
+
+    <button class="deep-open" type="button" data-modal="dm-2"
+            aria-label="Read more about this decision — what &quot;dynamic&quot; means in practice">Read more about this decision <span class="arw" aria-hidden="true">&rarr;</span></button>
+
+    <div class="modal" id="dm-2" hidden>
+      <div class="modal-scrim" data-close></div>
+      <div class="modal-panel" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="dm-2-title">
+        <div class="modal-head">
+          <p class="modal-title" id="dm-2-title">What "dynamic" means in practice</p>
+          <button class="modal-x" type="button" data-close aria-label="Close deep dive">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+        <div class="deep-body" tabindex="0">
+          <h4><span class="mark">The setup</span></h4>
+          <p>Winning large partners away from local and international competitors comes down to one thing: how far you can customize their programme. So when I designed this system, I set myself one rule — I should always be able to say yes to a new request, never "sorry, the architecture doesn't allow that."</p>
+          <p>Here's what "dynamic" actually means in practice — a few standalone examples to show how far the customization goes.</p>
+
+          <h5>A. Taking on any scheme a large partner asks for</h5>
+          <p>A large, demanding partner can come to us with a fully custom set of scheme requirements. As long as it's reasonable and safe for the company, we can set it up and launch it in about 30 minutes — no code involved.</p>
+
+          <p><b>The design is modular:</b> Every piece — the scheme, the trading conditions — is built from independent components. That's what makes it possible: when either the broker or the partner wants a change, we swap the component. No code needed. Here's what that looks like:</p>
+
+          <figure>
+            <div class="fig-media shot-frame">
+              <img class="shot-img shot-img-light" src="images/modules-accent-light.webp"
+                   width="2000" height="1360" alt="A partner programme broken into configurable modules across four rows: the Custom IB Program at the top branches into Client Group 1 (lower fee) and Client Group 2 (higher fee); each client group offers its own account types, Standard and Pro; and each account type carries its own partner reward scheme — a CPA amount, a rebate share, or both. Individual nodes are highlighted to show that any single module can be swapped or reconfigured on its own without touching the rest.">
+              <img class="shot-img shot-img-dark" src="images/modules-accent-dark.webp"
+                   width="2000" height="1360" alt="A partner programme broken into configurable modules across four rows: the Custom IB Program at the top branches into Client Group 1 (lower fee) and Client Group 2 (higher fee); each client group offers its own account types, Standard and Pro; and each account type carries its own partner reward scheme — a CPA amount, a rebate share, or both. Individual nodes are highlighted to show that any single module can be swapped or reconfigured on its own without touching the rest.">
+            </div>
+            <figcaption><span class="cap-n">Caption</span>A partner programme, assembled from independent parts: client groups, account types, and reward schemes. Each highlighted piece is dragged into place — swap any one, and the programme changes, no code touched. All figures shown are illustrative.</figcaption>
+          </figure>
+
+          <h5>B. A growth path built for one partner</h5>
+          <p>A large partner willing to commit to specific KPI targets can get a progression path of their own: as they clear each milestone, their reward rates step up — higher rebates and CPA across every client group and account type.</p>
+
+          <p>This runs on the same modular design. Defining a partner's growth path is a configuration, not a build — agreed on and live in about 30 minutes.</p>
+
+          <figure>
+            <div class="fig-media shot-frame">
+              <img class="shot-img shot-img-light" src="images/growth-light.webp"
+                   width="2000" height="1360" alt="A single partner's growth path laid out as a grid. Along the top, a timeline of tiers — Entry Tier, Tier Level 2, and further tiers beyond. Each tier column lists its target KPIs (active traders, total value locked, net deposit) and, below them, the reward rates that tier unlocks for every combination of client group and account type — rebate percentages and CPA amounts, all rising from one tier to the next. Individual cells are highlighted to show that each one is placed by configuration rather than written in code.">
+              <img class="shot-img shot-img-dark" src="images/growth-dark.webp"
+                   width="2000" height="1360" alt="A single partner's growth path laid out as a grid. Along the top, a timeline of tiers — Entry Tier, Tier Level 2, and further tiers beyond. Each tier column lists its target KPIs (active traders, total value locked, net deposit) and, below them, the reward rates that tier unlocks for every combination of client group and account type — rebate percentages and CPA amounts, all rising from one tier to the next. Individual cells are highlighted to show that each one is placed by configuration rather than written in code.">
+            </div>
+            <figcaption><span class="cap-n">Caption</span>One partner's growth path: each tier sets a KPI target, and clearing it lifts the reward rates — rebates and CPA — for every client group and account type. Each highlighted cell is dragged into place; the whole path is assembled, not coded. All figures shown are illustrative.</figcaption>
+          </figure>
+
+          <h5>C. Built to take on more</h5>
+          <p>The system isn't designed to support just a handful of partners. By design, it could serve hundreds — even thousands — of large partners, if the business ever gets there. Each with their own requirements, and the system doesn't break down as that number grows.</p>
+          <figure>
+            <div class="fig-media shot-frame">
+              <img class="shot-img shot-img-light" src="images/multi-light.webp"
+                   width="2000" height="752" alt="A wide field of identical partner programme cards — Custom IB Program 1 through 10 and continuing past the edge of the frame — laid out in three staggered rows, showing many fully separate custom programmes running side by side at the same time.">
+              <img class="shot-img shot-img-dark" src="images/multi-dark.webp"
+                   width="2000" height="752" alt="A wide field of identical partner programme cards — Custom IB Program 1 through 10 and continuing past the edge of the frame — laid out in three staggered rows, showing many fully separate custom programmes running side by side at the same time.">
+            </div>
+            <figcaption><span class="cap-n">Caption</span>Running thousands of different partnerships, still clean and under control.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="dbox">
+    <h3 class="dbox-title">The rest of the system</h3>
+    <p>The other major capabilities that keep the system running, grouped by area.</p>
+
+    <ul class="mod-list">
+      <li>
+        <span class="mod-name">Partner Management</span>
+        <span class="mod-items">managing partners by attribute group, managing per-partner attributes, tracking and sharing rewards across a 7-level partner relationship</span>
+      </li>
+      <li>
+        <span class="mod-name">Scheme Management</span>
+        <span class="mod-items">Scheme Builder, Scheme Management Module, Scheme Calculation Scheduler</span>
+      </li>
+      <li>
+        <span class="mod-name">Reward Payment</span>
+        <span class="mod-items">Partner Wallet, Reward Credit, Reward Withdrawal, Internal Transfer</span>
+      </li>
+      <li>
+        <span class="mod-name">Partner Growth</span>
+        <span class="mod-items">Tier Auto Upgrade / Downgrade</span>
+      </li>
+      <li>
+        <span class="mod-name">Fraud Prevention</span>
+        <span class="mod-items">Self-Referral Detection</span>
+      </li>
+      <li>
+        <span class="mod-name">Partner Area UI</span>
+        <span class="mod-items">Partner Dashboard, Mini CRM to manage clients, Marketing Hub, Payment Functions, Reward &amp; Client Reporting</span>
+      </li>
+    </ul>
+
+    <figure>
+      <div class="fig-media shot-frame">
+        <img class="shot-img shot-img-light" src="images/system-light.webp"
+             width="2000" height="1554" alt="A map of the whole partnership system. A Partner Manager layer runs from Director or CEO down to Manager or Department Head, who oversees mistake control, fraud prevention and reports. Below it a Backend layer holds attribute management, partner groups, scheme management, and scheme calculation with revenue protection and payroll, plus A/B book and ceiling controls, payroll approval, tier up- and down-grade, relationship management with sub-levels, and client cashback. On the left a Partner Area gives partners referral codes and links, account and payment, partner tier, marketing material, reports, client cashback, a loyalty programme and a mini CRM. Arrows show partners and clients moving between the three layers.">
+        <img class="shot-img shot-img-dark" src="images/system-dark.webp"
+             width="2000" height="1554" alt="A map of the whole partnership system. A Partner Manager layer runs from Director or CEO down to Manager or Department Head, who oversees mistake control, fraud prevention and reports. Below it a Backend layer holds attribute management, partner groups, scheme management, and scheme calculation with revenue protection and payroll, plus A/B book and ceiling controls, payroll approval, tier up- and down-grade, relationship management with sub-levels, and client cashback. On the left a Partner Area gives partners referral codes and links, account and payment, partner tier, marketing material, reports, client cashback, a loyalty programme and a mini CRM. Arrows show partners and clients moving between the three layers.">
+      </div>
+    </figure>
+  </section>
+
+  <!-- ============ 04 ============ -->
+  <div class="sec">
+    <h2>How we worked</h2>
+  </div>
+
+  <p>Over 6 months, with 1 PM and 4 engineers, we delivered the entire system — including rebuilding the CRM and Back Office data schema from the ground up, all while running other projects in parallel.</p>
+
+  <p class="pull">Our developers were based in China and didn't speak English, so we worked Zero-Meeting: I owned architecture, backend logic, API, front-end design, spec, and QA myself — so when work reached them, they could just code, with little to no need to ask questions.</p>
+
+  <!-- ============ 05 ============ -->
+  <div class="sec">
+    <h2>The system in practice</h2>
+  </div>
+
+  <h3 class="sub">Partner Area UI</h3>
+
+  <p>The Partner Area focuses on what partners actually need: a Mini CRM to manage their own clients, and visibility into how their rewards are calculated and paid. The goal was trust — partners can see the logic, not just the result.</p>
+
+    <figure>
+    <div class="fig-media shot-frame">
+      <img class="shot-img shot-img-light" src="images/partner-area-light.webp"
+           width="2000" height="1586" alt="Three phone screens side by side. Home Dashboard: revenue with a withdraw action, referral tools with a copyable link and code, and a reward-performance panel. Mini CRM: a client list where each client shows an ID, a status badge such as acquisition in progress or active trader, current status and next target, plus lifetime deposit, withdrawal and live trading figures. Funnel Overview: counts for leads, KYC clients, first-time-deposit clients, traded clients, recently active clients and premium clients.">
+      <img class="shot-img shot-img-dark" src="images/partner-area-dark.webp"
+           width="2000" height="1586" alt="Three phone screens side by side. Home Dashboard: revenue with a withdraw action, referral tools with a copyable link and code, and a reward-performance panel. Mini CRM: a client list where each client shows an ID, a status badge such as acquisition in progress or active trader, current status and next target, plus lifetime deposit, withdrawal and live trading figures. Funnel Overview: counts for leads, KYC clients, first-time-deposit clients, traded clients, recently active clients and premium clients.">
+    </div>
+    <figcaption><span class="cap-n">Caption</span>The partner's home: earnings and referral tools at a glance, plus a Mini CRM to track each client's status — from lead to KYC to first deposit — like a sales pipeline of their own.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="fig-media shot-frame">
+      <img class="shot-img shot-img-light" src="images/reward-detail-light.webp"
+           width="2000" height="1324" alt="A single wide screen titled Reward details, showing one reward broken into three steps. Step 1 calculates client performance over a dated window from deposit amount and trading volume. Step 2 maps those two KPIs onto a range table to produce an original reward. Step 3 splits that reward across seven partner levels by percentage, with the viewing partner marked at level 1. A summary bar at the bottom states the partner's own share.">
+      <img class="shot-img shot-img-dark" src="images/reward-detail-dark.webp"
+           width="2000" height="1324" alt="A single wide screen titled Reward details, showing one reward broken into three steps. Step 1 calculates client performance over a dated window from deposit amount and trading volume. Step 2 maps those two KPIs onto a range table to produce an original reward. Step 3 splits that reward across seven partner levels by percentage, with the viewing partner marked at level 1. A summary bar at the bottom states the partner's own share.">
+    </div>
+    <figcaption><span class="cap-n">Caption</span>How a single reward is calculated, shown step by step: the client's performance, the reward it maps to, and how it's split across partner levels. Partners see the full logic, not just the final number.</figcaption>
+  </figure>
+
+  <h3 class="sub">Scheme Builder Form</h3>
+
+  <p>There are three builder forms, one for each scheme type. Each one offers a set of KPI metrics and reward types to choose from, and lets a CRM user configure payout rates per partner tier. Every form includes inline guidance at each step, so users can't misconfigure a scheme without understanding what they're setting.</p>
+
+  <p>I designed each form to walk through the full calculation logic — the trigger event, the KPI measurement window, the reward tiers, and how the reward splits across up to seven partner levels. What I was really after was control: I wanted the payout logic powerful enough to handle the hardest requests a partner could throw at us, and precise enough to trust. And this is just one scheme type — I built the system to support several.</p>
+
+  <figure>
+    <div class="fig-media shot-frame">
+      <!-- one artwork for both themes, by design: this screenshot is shared. -->
+      <img class="shot-img" src="images/scheme-builder.webp"
+           width="2000" height="1872" alt="The Scheme Builder form laid out as four configuration steps. Step 1 sets the trigger event and the measurement window, with a timeline diagram showing the window opening at the trigger and closing after a set number of days. Step 2 chooses how many KPIs to measure and configures each one, including minimum position hold and which symbols or symbol groups to include. Step 3 sets the scheme tiers — a table mapping ranges of both KPIs to a reward amount — and the operator between them. Step 4 sets reward sharing, distributing the original reward across partner levels one to seven by percentage. Each step carries its own diagram and inline explanation.">
+    </div>
+    <figcaption><span class="cap-n">Caption</span>I built this as a four-step form: set the trigger event and measurement window, choose the KPIs, map performance to reward tiers, then split the reward across up to seven partner levels. I paired every step with a diagram and inline guidance, so whoever configures it always sees the logic they're setting. Figures are illustrative.</figcaption>
+  </figure>
+
+  <h3 class="sub">Growth Path Form (Tier Up / Down)</h3>
+
+  <p>The Growth Path Form makes tier upgrade and downgrade logic visible and editable directly — the conditions for promoting or demoting a partner aren't buried in code. Multiple partner programmes, each with their own tier logic, can run side by side without conflict.</p>
+
+  <figure>
+    <div class="fig-media shot-frame">
+      <!-- one artwork for both themes, by design: this screenshot is shared. -->
+      <img class="shot-img" src="images/growth-path-form.webp"
+           width="2000" height="1873" alt="The Growth Path form for a partner tier chain. A basics panel sets the chain name, whether it is enabled and how often it runs; a marketing panel sets the name and description partners see. Below, a row of tiers runs left to right, each one picking a partner group. Every tier carries an upgrade condition block tinted green and, from the second tier on, a downgrade block tinted red. Each block is built from KPI rules — trading volume, KYC count, active traders, profit — joined by AND and OR, with controls to add a single condition or a whole condition group, and a JSON preview.">
+    </div>
+    <figcaption><span class="cap-n">Caption</span>The form where I made tier logic visible and editable: each tier in a partner's growth path has its own upgrade conditions (green) and downgrade conditions (red), built from KPI rules instead of buried in code. Chains run independently, so many partner programmes can have their own tier logic side by side. Figures are illustrative.</figcaption>
+  </figure>
+
+      <h3 class="sub">Fraud Prevention Engine</h3>
+
+  <p>Fraud prevention runs on weekly scoring across device, network, and attribution signals, rolling up into a partner-level risk rate. Each case shows a plain-language explanation and a confidence band, with three graduated actions &mdash; blacklist the partner, blacklist the flagged clients only, or clear it.</p>
+
+<!-- ============ 06 ============ -->
+  <div class="sec">
+    <h2>The impact</h2>
+  </div>
+
+  <p>Six months after launch, the system — together with the Business Development team's work — had driven significant growth, opening a kind of opportunity the broker had never had before.</p>
+
+  <div class="stat-rail">
+    <div class="figures">
+      <div><span class="f-num">5<span class="arrow">→</span>517</span><span class="f-lab">Partners</span></div>
+      <div><span class="f-num">6.0%<span class="arrow">→</span>11.8%</span><span class="f-lab">Share of new funded clients, monthly avg</span></div>
+      <div><span class="f-num">9.4%<span class="arrow">→</span>16.3%</span><span class="f-lab">Deposit share</span></div>
+      <div><span class="f-num">~2,000</span><span class="f-lab">Closed deals / day</span></div>
+    </div>
+  </div>
+
+  <p>Payout reconciliation went from 5 person-days a month to automated 30-minute cycles.</p>
+
+  <figure>
+    <div class="fig-media plain">
+      <svg class="chart" viewBox="0 0 640 158" fill="none" aria-hidden="true">
+        <line x1="0" y1="108" x2="640" y2="108" class="dg-line" stroke-width="1" stroke-dasharray="4 4"/>
+        <text x="636" y="102" text-anchor="end" class="dg-t2" font-size="9">pre-launch baseline</text>
+        <!-- month 0 = launch. Scale: y = 112 - (value - 5.5) * 8, so 6.0% sits
+             exactly on the dashed baseline and every point encodes linearly. -->
+        <polyline points="20,108 105,92 190,61.6 275,78.4 360,34.4 445,40 530,76.8 615,50.4"
+          class="dg-line-ink" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        <g class="dg-fill-ink">
+          <circle cx="105" cy="92" r="3.4"/>
+          <circle cx="190" cy="61.6" r="3.4"/>
+          <circle cx="275" cy="78.4" r="3.4"/>
+          <circle cx="360" cy="34.4" r="3.4"/>
+          <circle cx="445" cy="40" r="3.4"/>
+          <circle cx="530" cy="76.8" r="3.4"/>
+          <circle cx="615" cy="50.4" r="3.4"/>
+        </g>
+        <circle cx="20" cy="108" r="4.6" class="dg-ring" stroke-width="1.8"/>
+        <g class="dg-t" font-size="9">
+          <text x="20" y="96" text-anchor="middle">6.0%</text>
+          <text x="105" y="80" text-anchor="middle">8.0%</text>
+          <text x="190" y="49.6" text-anchor="middle">11.8%</text>
+          <text x="275" y="66.4" text-anchor="middle">9.7%</text>
+          <text x="360" y="22.4" text-anchor="middle">15.2%</text>
+          <text x="445" y="28" text-anchor="middle">14.5%</text>
+          <text x="530" y="64.8" text-anchor="middle">9.9%</text>
+          <text x="615" y="38.4" text-anchor="middle">13.2%</text>
+        </g>
+        <g class="dg-t2" font-size="10">
+          <text x="20" y="134" text-anchor="middle">0</text>
+          <text x="105" y="134" text-anchor="middle">1</text>
+          <text x="190" y="134" text-anchor="middle">2</text>
+          <text x="275" y="134" text-anchor="middle">3</text>
+          <text x="360" y="134" text-anchor="middle">4</text>
+          <text x="445" y="134" text-anchor="middle">5</text>
+          <text x="530" y="134" text-anchor="middle">6</text>
+          <text x="615" y="134" text-anchor="middle">7</text>
+        </g>
+        <text x="20" y="150" text-anchor="middle" class="dg-t2" font-size="9">launch</text>
+      </svg>
+    </div>
+    <figcaption><span class="cap-n">Caption</span>Partner-attributed share of new funded clients, by month since launch — climbing from a 6.0% pre-launch baseline to a 15.2% peak in month 4.</figcaption>
+  </figure>
+
+  <p>The distribution is a long tail: most partners refer just a handful of clients each, a smaller group brings in dozens, and only a few bring in more. The channel's strength comes from the breadth of many small partners, not a few large ones.</p>
+
+  <figure>
+    <div class="fig-media plain">
+      <div class="lt-bars">
+        <div class="lt-bar-wrap"><div class="lt-bar" style="height:100%"></div></div>
+        <div class="lt-bar-wrap"><div class="lt-bar" style="height:19%"></div></div>
+        <div class="lt-bar-wrap"><div class="lt-bar" style="height:10%"></div></div>
+        <div class="lt-bar-wrap"><div class="lt-bar" style="height:3%"></div></div>
+      </div>
+      <div class="lt-labels">
+        <span>1–3 clients</span><span>4–9 clients</span><span>10–99 clients</span><span>100+ clients</span>
+      </div>
+    </div>
+    <figcaption><span class="cap-n">Caption</span>Partner distribution — referrals per partner. The channel is carried by volume of small partners, not a handful of large ones.</figcaption>
+  </figure>
+
+  <!-- ============ CLOSING ============ -->
+  <div class="burst">
+    <p class="b-kicker">Contact</p>
+    <h2>Building partner infrastructure, or hiring someone who has?</h2>
+    <p>I work on the systems behind FX/CFD brokerages — commission engines, CRM, back office, the parts that don't show but decide everything.</p>
+    <a class="btn" href="mailto:nndao96@gmail.com">Get in touch <span aria-hidden="true">→</span></a>
+  </div>
+
+  <footer>
+    <p>Partnership System — Case Study · 2026</p>
+  </footer>
+
+</article>
+
+<aside class="disclosure" id="disclosure" aria-labelledby="disclosure-title">
+  <div class="disclosure-text">
+    <p class="disclosure-title" id="disclosure-title">A note on confidentiality</p>
+    <p>All company names, client data, and figures here are anonymized or illustrative. The mechanisms shown are standard industry practice &mdash; nothing confidential is disclosed.</p>
+  </div>
+  <button class="disclosure-x" type="button" aria-label="Dismiss this notice">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
+</aside>
+
+<script>
+  (function(){
+    var root=document.documentElement;
+    document.getElementById('themeToggle').addEventListener('click', function(){
+      var next = root.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try{ localStorage.setItem('nt-theme', next); }catch(e){}
+    });
+  })();
+
+  /* ---- stat rail: edge fades, plus a slow continuous marquee on mobile ----
+         The fade state must be set here because CSS cannot tell whether a
+         scroller has further to go. The marquee duplicates the stats and
+         drifts the track by exactly one copy, so the wrap is invisible. It
+         never runs on desktop and never when the OS asks for reduced motion.
+         ---- */
+  (function(){
+    var mayAnimate = window.matchMedia('(prefers-reduced-motion: no-preference)').matches;
+    var narrow = window.matchMedia('(max-width:720px)');
+    var SPEED = 20;            /* px per second — calm enough to read while it drifts */
+
+    [].slice.call(document.querySelectorAll('.stat-rail')).forEach(function(rail){
+      var s=rail.querySelector('.figures');
+      if(!s) return;
+
+      /* Wrap the stats in a track. Layout-neutral on desktop (display:contents). */
+      var track=document.createElement('div');
+      track.className='rail-track';
+      while(s.firstChild) track.appendChild(s.firstChild);
+      s.appendChild(track);
+      var originals=[].slice.call(track.children);
+
+      function sync(){
+        var max=s.scrollWidth-s.clientWidth;
+        rail.classList.toggle('scrollable', max>1);
+        rail.classList.toggle('at-start', s.scrollLeft<=1);
+        rail.classList.toggle('at-end', s.scrollLeft>=max-1);
+      }
+      s.addEventListener('scroll', sync, {passive:true});
+      window.addEventListener('resize', sync, {passive:true});
+      sync();
+
+      if(!mayAnimate) return;
+
+      var clones=[], running=false, surrendered=false;
+
+      function start(){
+        if(running || surrendered || !narrow.matches) return;
+        var copy=track.getBoundingClientRect().width;
+        if(copy<=s.clientWidth) return;      /* nothing to drift past */
+        originals.forEach(function(it){
+          var c=it.cloneNode(true);
+          c.setAttribute('aria-hidden','true');   /* the copy is visual only */
+          track.appendChild(c); clones.push(c);
+        });
+        var gap=parseFloat(getComputedStyle(track).columnGap)||0;
+        rail.style.setProperty('--rail-dur', ((copy+gap)/SPEED).toFixed(1)+'s');
+        rail.classList.add('drifting');
+        running=true;
+      }
+
+      function teardown(){
+        rail.classList.remove('drifting');
+        clones.forEach(function(c){ c.parentNode && c.parentNode.removeChild(c); });
+        clones=[];
+        running=false;
+      }
+
+      /* Real input hands control over permanently — pointer/touch/wheel only
+         ever come from the reader, whereas a scroll event cannot tell us who
+         caused it. Freeze where the drift had reached, then hand back a
+         plain native-scrolling row. */
+      function surrender(){
+        if(surrendered) return;
+        surrendered=true;
+        var travelled=0, m=getComputedStyle(track).transform;
+        if(m && m!=='none'){
+          var parts=/matrix\(([^)]+)\)/.exec(m);
+          if(parts) travelled=-parseFloat(parts[1].split(',')[4]);
+        }
+        teardown();
+        track.style.transform='none';
+        var max=s.scrollWidth-s.clientWidth;
+        s.scrollLeft=Math.max(0, Math.min(max, travelled));
+        sync();
+      }
+      ['pointerdown','touchstart','wheel'].forEach(function(ev){
+        s.addEventListener(ev, surrender, {passive:true});
+      });
+
+      start();
+      function onBreakpoint(){
+        if(surrendered) return;
+        if(narrow.matches){ start(); } else { teardown(); }
+      }
+      if(narrow.addEventListener) narrow.addEventListener('change', onBreakpoint);
+      window.addEventListener('resize', onBreakpoint, {passive:true});
+    });
+  })();
+
+  /* ---- deep-dive modals ----
+         Each trigger names its dialog by id. The dialog markup already sits
+         next to its trigger in the source, so the reading order and the
+         no-JS document order both stay intact; opening only unhides it.
+         Nothing between here and the root creates a stacking or containing
+         block, so position:fixed still resolves against the viewport. ---- */
+  (function(){
+    var open=null, opener=null;
+    var FOCUSABLE='a[href],button:not([disabled]),input,select,textarea,[tabindex]:not([tabindex="-1"])';
+
+    function lock(on){
+      if(on){
+        /* Compensate for the scrollbar we are about to remove, or the whole
+           page jumps sideways the instant a dialog opens. */
+        var pad=window.innerWidth-document.documentElement.clientWidth;
+        document.body.style.overflow='hidden';
+        if(pad>0) document.body.style.paddingRight=pad+'px';
+      }else{
+        document.body.style.overflow='';
+        document.body.style.paddingRight='';
+      }
+    }
+
+    function show(modal, from){
+      if(open) hide();
+      open=modal; opener=from;
+      modal.hidden=false;
+      lock(true);
+      var panel=modal.querySelector('.modal-panel');
+      if(panel) panel.focus();
+    }
+
+    function hide(){
+      if(!open) return;
+      /* Reset the scroll BEFORE hiding: a display:none element has no scroll
+         box, so the assignment would be dropped and the old offset restored
+         on reopen. A dialog that reopens mid-article is disorienting. */
+      var body=open.querySelector('.deep-body');
+      if(body) body.scrollTop=0;
+      open.hidden=true;
+      open=null;
+      lock(false);
+      if(opener) opener.focus();
+      opener=null;
+    }
+
+    [].slice.call(document.querySelectorAll('.deep-open')).forEach(function(btn){
+      var modal=document.getElementById(btn.getAttribute('data-modal'));
+      if(!modal) return;
+      btn.addEventListener('click', function(){ show(modal, btn); });
+    });
+
+    document.addEventListener('click', function(e){
+      if(!open) return;
+      /* the scrim and the X both carry data-close — one handler covers both */
+      if(e.target.closest('[data-close]')) hide();
+    });
+
+    document.addEventListener('keydown', function(e){
+      if(!open) return;
+      if(e.key==='Escape'){ e.preventDefault(); hide(); return; }
+      if(e.key!=='Tab') return;
+      /* Trap: focus must not escape into the page behind the scrim. */
+      var items=[].slice.call(open.querySelectorAll(FOCUSABLE))
+                  .filter(function(el){ return el.offsetParent!==null; });
+      if(!items.length) return;
+      var first=items[0], last=items[items.length-1];
+      var at=items.indexOf(document.activeElement);
+      /* at === -1 covers the panel itself, which holds focus on open and is
+         deliberately not in the cycle — Tab enters it, Shift+Tab wraps back. */
+      if(at===-1){ e.preventDefault(); (e.shiftKey ? last : first).focus(); }
+      else if(e.shiftKey && at===0){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey && at===items.length-1){ e.preventDefault(); first.focus(); }
+    });
+  })();
+
+  /* ---- table of contents: built from the headings so it can never drift ---- */
+  (function(){
+    var nav=document.getElementById('toc');
+    var secs=[].slice.call(document.querySelectorAll('.article > .sec'));
+    if(!nav||!secs.length) return;
+    var ul=document.createElement('ul'), links=[], targets=[];
+    secs.forEach(function(sec,i){
+      var h=sec.querySelector('h2'); if(!h) return;
+      if(!sec.id) sec.id='section-'+(i+1);
+      var li=document.createElement('li'), a=document.createElement('a');
+      a.href='#'+sec.id;
+      a.textContent=h.textContent.trim();
+      li.appendChild(a); ul.appendChild(li);
+      links.push(a); targets.push(sec);
+    });
+    nav.appendChild(ul);
+
+    /* Runs straight off the scroll event. With this few sections the rect
+       reads are trivial, and it avoids a rAF-throttle whose "pending" flag
+       stays latched whenever a queued frame never fires. Reading live rects
+       also means an opened deep-dive shifts offsets with no invalidation. */
+    function spy(){
+      var probe=window.scrollY+140, active=-1;
+      for(var i=0;i<targets.length;i++){
+        if(targets[i].getBoundingClientRect().top+window.scrollY<=probe) active=i;
+      }
+      /* pin the last item once the page bottom is reached */
+      if(window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-2){
+        active=targets.length-1;
+      }
+      for(var j=0;j<links.length;j++) links[j].classList.toggle('active', j===active);
+    }
+    window.addEventListener('scroll', spy, {passive:true});
+    window.addEventListener('resize', spy, {passive:true});
+    spy();
+  })();
+
+  /* ---------- disclosure notice ----------
+     Dismissal is in-memory only: no storage, so the notice returns on reload.
+     That is deliberate — a reader arriving fresh should always see it.
+
+     The bar is fixed, so it is out of flow and would sit on top of the footer
+     at the bottom of the page. Rather than guess a padding, measure the bar:
+     it wraps to two or three lines on narrow screens, so a hard-coded value
+     would be wrong at exactly the widths where it matters most. The padding
+     is released the moment the bar is dismissed. */
+  (function(){
+    var note = document.getElementById('disclosure');
+    if(!note) return;
+    var x = note.querySelector('.disclosure-x');
+    if(!x) return;
+
+    function reserve(){
+      if(note.hidden){ document.body.style.paddingBottom = ''; return; }
+      var h = note.getBoundingClientRect().height;
+      document.body.style.paddingBottom = (h + 48) + 'px';
+    }
+
+    x.addEventListener('click', function(){ note.hidden = true; reserve(); });
+
+    if(window.ResizeObserver){
+      new ResizeObserver(reserve).observe(note);
+    }else{
+      window.addEventListener('resize', reserve, {passive:true});
+    }
+    reserve();
+  })();
+</script>
+
+</body>
+</html>
