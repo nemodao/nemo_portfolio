@@ -40,6 +40,12 @@
           changes a single pixel, so there is no flash of page content. The
           crude display:none trick is deliberately avoided — it reflows the
           whole document and visibly blinks.
+       4. Do the whole swap TWICE, one frame apart. Some iOS versions ignore
+          the first runtime theme-color change and only repaint on the second.
+          This is the last technique available; if the status bar still does
+          not follow the toggle after it, the platform simply does not repaint
+          theme-color at runtime for a normal Safari tab, and load-time colour
+          — which is correct — is all that can be had.
 
        `immediate` skips the rAF deferral for the boot call: at first paint
        there is nothing to repaint yet, and waiting two frames would show the
@@ -69,14 +75,24 @@
         }
       }
 
+      /* One pending chain at a time. A fast re-toggle must kill every step
+         still queued — including the second mutation below — or the tag lands
+         twice and the colours race. */
+      if (themeColorFrame) { cancelAnimationFrame(themeColorFrame); themeColorFrame = 0; }
       purge();
       if (immediate || !window.requestAnimationFrame) { insert(); return colour; }
-      /* one pending swap at a time, or a fast double-toggle appends twice */
-      if (themeColorFrame) cancelAnimationFrame(themeColorFrame);
+
       themeColorFrame = requestAnimationFrame(function(){
         themeColorFrame = requestAnimationFrame(function(){
-          themeColorFrame = 0;
-          insert();
+          insert();                                     /* first mutation  */
+          /* 4. Mutate a second time on the next frame, same colour. Some iOS
+                versions ignore the first theme-color change at runtime and
+                only repaint on the second. insert() purges before appending,
+                so this replaces rather than adds — the tag count never grows. */
+          themeColorFrame = requestAnimationFrame(function(){
+            themeColorFrame = 0;
+            insert();                                   /* second mutation */
+          });
         });
       });
       return colour;
