@@ -5,13 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Partnership System — Case Study</title>
 <meta name="description" content="The infrastructure that turns partner referrals into a revenue channel.">
-<!-- ONE theme-color, no media attribute, driven by JS. A media-query pair
-     ("prefers-color-scheme: light/dark") is deliberately NOT used: the browser
-     takes the first meta whose media matches, so an OS-matched media meta
-     would outrank the JS-set one and the iOS status bar would follow the
-     system setting instead of this page's manual toggle.
-     This static tag is the no-JS fallback; setThemeColor() below replaces it. -->
-<meta name="theme-color" content="#FBFBFA">
+<!-- theme-color is for Chromium browsers, which do honour it and DO repaint
+     when the content attribute changes at runtime.
+
+     It does nothing on iOS 26+. Safari 26 dropped theme-color: the tag still
+     parses, the value is ignored. Safari instead samples the background-color
+     of a position:fixed/sticky element sitting within 4px of the top (or 3px
+     of the bottom), at least 80% wide and 3px tall, and falls back to <body>.
+     On this page that source is .topbar. Crucially the sample is taken at
+     first render and is never retaken — changing colours from JS does not
+     re-tint the bar, by design. So on iOS the status bar is correct on load
+     and then holds that colour until the page reloads. Four escalating
+     workarounds (re-inserting the tag, deferring through rAF, forcing reflow,
+     mutating twice across frames) were tried on device and none can work,
+     because none of them touch the mechanism Safari actually reads.
+
+     No media attribute: on browsers that DO read theme-color, the first tag
+     whose media matches wins, so an OS-matched media tag would outrank this
+     one and follow the system setting instead of the page's own toggle. -->
+<meta name="theme-color" id="themeColorMeta" content="#FBFBFA">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -23,83 +35,12 @@
     t = (t==='dark') ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', t);
 
-    /* iOS Safari reads theme-color when the tag ENTERS the document. Three
-       things stack here, because each alone was tested on device and failed:
-
-       1. Never mutate the tag. Writing a new `content` onto a tag already in
-          <head> updates the DOM and leaves the status bar on the colour Safari
-          first read. Every theme-color tag is removed and a fresh one appended.
-          Removing ALL of them, not just the first, is what stops repeated
-          toggles accumulating duplicates.
-       2. Append on a fresh frame. Safari often only re-reads the tag when the
-          insertion lands in a new frame, so the append is deferred through two
-          nested requestAnimationFrames — one frame is not always enough, and
-          two costs ~32ms, which no one can perceive on a mode toggle.
-       3. Nudge a repaint after inserting. Reading offsetHeight forces a
-          synchronous layout and the no-op scrollTo asks for a paint; neither
-          changes a single pixel, so there is no flash of page content. The
-          crude display:none trick is deliberately avoided — it reflows the
-          whole document and visibly blinks.
-       4. Do the whole swap TWICE, one frame apart. Some iOS versions ignore
-          the first runtime theme-color change and only repaint on the second.
-          This is the last technique available; if the status bar still does
-          not follow the toggle after it, the platform simply does not repaint
-          theme-color at runtime for a normal Safari tab, and load-time colour
-          — which is correct — is all that can be had.
-
-       `immediate` skips the rAF deferral for the boot call: at first paint
-       there is nothing to repaint yet, and waiting two frames would show the
-       fallback light bar before correcting — a flash on exactly the thing this
-       is meant to fix.
-
-       Exposed on window because the toggle handler lives in a separate script
-       block at the end of the document and must share this implementation. */
-    var themeColorFrame = 0;
-    window.setThemeColor = function(mode, immediate){
-      var colour = (mode === 'dark') ? '#242424' : '#FBFBFA';
-
-      function purge(){
-        var old = document.head.querySelectorAll('meta[name="theme-color"]');
-        for (var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
-      }
-      function insert(){
-        purge();                       /* re-run: a fast double-toggle may have
-                                          queued another tag in between */
-        var meta = document.createElement('meta');
-        meta.setAttribute('name', 'theme-color');
-        meta.setAttribute('content', colour);
-        document.head.appendChild(meta);
-        if (document.body) {
-          void document.body.offsetHeight;                    /* forces layout */
-          window.scrollTo(window.scrollX, window.scrollY);    /* asks for paint */
-        }
-      }
-
-      /* One pending chain at a time. A fast re-toggle must kill every step
-         still queued — including the second mutation below — or the tag lands
-         twice and the colours race. */
-      if (themeColorFrame) { cancelAnimationFrame(themeColorFrame); themeColorFrame = 0; }
-      purge();
-      if (immediate || !window.requestAnimationFrame) { insert(); return colour; }
-
-      themeColorFrame = requestAnimationFrame(function(){
-        themeColorFrame = requestAnimationFrame(function(){
-          insert();                                     /* first mutation  */
-          /* 4. Mutate a second time on the next frame, same colour. Some iOS
-                versions ignore the first theme-color change at runtime and
-                only repaint on the second. insert() purges before appending,
-                so this replaces rather than adds — the tag count never grows. */
-          themeColorFrame = requestAnimationFrame(function(){
-            themeColorFrame = 0;
-            insert();                                   /* second mutation */
-          });
-        });
-      });
-      return colour;
+    window.setThemeColor = function(mode){
+      var m = document.getElementById('themeColorMeta');
+      if (m) m.setAttribute('content', mode === 'dark' ? '#242424' : '#FBFBFA');
     };
-    /* Runs in <head>: synchronous, so the status bar is correct on the first
-       frame rather than flashing the fallback light value and then correcting. */
-    window.setThemeColor(t, true);
+    /* Runs in <head>, before first paint. */
+    window.setThemeColor(t);
   })();
 </script>
 <style>
@@ -1737,9 +1678,6 @@ footer p{
     document.getElementById('themeToggle').addEventListener('click', function(){
       var next = root.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', next);
-      /* Swap the tag on a fresh frame, never mutate it — see setThemeColor()
-         in <head>. Ordered after data-theme so the page has already recoloured
-         by the time the new declaration lands. */
       if (window.setThemeColor) window.setThemeColor(next);
       try{ localStorage.setItem('nt-theme', next); }catch(e){}
     });
