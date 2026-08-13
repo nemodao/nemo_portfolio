@@ -1023,6 +1023,13 @@ footer p{
 
   .dbox{ padding:var(--space-24); }
   .dirbox{ padding:20px; }
+  /* .dir-msg rides --text-subhead, one of the two article tokens with no
+     mobile step. At 20px it sat 5px over the 15px label and 3px over 17px
+     body copy, so on a phone the box shouted instead of speaking.
+     18px keeps it one step above body — the box is a statement, not prose —
+     and the label still separates on weight (500 vs 400) and ink (--ink vs
+     --ink-2), which were always doing more of that work than size. */
+  .dirbox .dir-msg{ font-size:18px; }
   /* 292px of inner width cannot carry a 170px name column: stack instead,
      with a tight gap so each name still owns the modules beneath it. */
   .mod-list > li{ grid-template-columns:1fr; gap:4px; }
