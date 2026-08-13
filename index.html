@@ -7,11 +7,11 @@
 <meta name="description" content="The infrastructure that turns partner referrals into a revenue channel.">
 <!-- ONE theme-color, no media attribute, driven by JS. A media-query pair
      ("prefers-color-scheme: light/dark") is deliberately NOT used: the browser
-     picks the first meta whose media matches, so an OS-matched media meta
-     would outrank the JS-updated one and the iOS status bar would follow the
-     system setting instead of this page's manual toggle. Set below before
-     first paint, and again on every toggle. -->
-<meta name="theme-color" id="themeColorMeta" content="#FBFBFA">
+     takes the first meta whose media matches, so an OS-matched media meta
+     would outrank the JS-set one and the iOS status bar would follow the
+     system setting instead of this page's manual toggle.
+     This static tag is the no-JS fallback; setThemeColor() below replaces it. -->
+<meta name="theme-color" content="#FBFBFA">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -22,10 +22,29 @@
     try{ t = localStorage.getItem('nt-theme') || 'light'; }catch(e){}
     t = (t==='dark') ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', t);
-    /* Runs in <head>, so the iOS status bar is already correct on the first
-       frame rather than flashing the light value and then correcting. */
-    var m = document.getElementById('themeColorMeta');
-    if(m) m.setAttribute('content', t==='dark' ? '#242424' : '#FBFBFA');
+
+    /* iOS Safari reads theme-color when the tag ENTERS the document. Mutating
+       an existing tag's content attribute updates the DOM but frequently does
+       not repaint the status bar — it keeps showing the colour it first read.
+       So never mutate: drop every theme-color tag and append a fresh one, which
+       Safari treats as a new declaration and re-reads.
+       Removing ALL of them (not just the first) is what keeps repeated toggles
+       from accumulating duplicate tags.
+       Exposed on window because the toggle handler lives in a separate script
+       block at the end of the document and must use the same implementation. */
+    window.setThemeColor = function(mode){
+      var colour = (mode === 'dark') ? '#242424' : '#FBFBFA';
+      var old = document.head.querySelectorAll('meta[name="theme-color"]');
+      for (var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
+      var meta = document.createElement('meta');
+      meta.setAttribute('name', 'theme-color');
+      meta.setAttribute('content', colour);
+      document.head.appendChild(meta);
+      return colour;
+    };
+    /* Runs in <head>, so the status bar is already correct on the first frame
+       rather than flashing the fallback light value and then correcting. */
+    window.setThemeColor(t);
   })();
 </script>
 <style>
@@ -1663,8 +1682,10 @@ footer p{
     document.getElementById('themeToggle').addEventListener('click', function(){
       var next = root.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', next);
-      var meta = document.getElementById('themeColorMeta');
-      if(meta) meta.setAttribute('content', next==='dark' ? '#242424' : '#FBFBFA');
+      /* Swap the tag, never its attribute — see setThemeColor() in <head>.
+         Ordered after data-theme so the page has already recoloured if Safari
+         repaints synchronously off the new declaration. */
+      if (window.setThemeColor) window.setThemeColor(next);
       try{ localStorage.setItem('nt-theme', next); }catch(e){}
     });
   })();
