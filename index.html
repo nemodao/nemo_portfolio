@@ -1003,6 +1003,24 @@ footer p{
        with the section h2 at this breakpoint). */
     --text-dbox-title:22px;
   }
+  /* Page gutter 24 -> 16 on mobile. 24px is a desktop-scale margin; on a
+     390px screen it costs 16px of column for no reading benefit. 16px is the
+     news-site convention, and it also brings the fixed notice bar — already
+     inset 16px — into line with the text column, which was 8px out.
+     The decision boxes keep their own 24px inner padding below, so box
+     content still sits 40px from the screen edge, not against it. */
+  .article{
+    grid-template-columns:
+      minmax(var(--space-16), 1fr)
+      min(var(--measure), 100% - var(--space-32))
+      minmax(var(--space-16), 1fr);
+  }
+  /* The hero's wide break subtracts one page margin from the span it is
+     allowed. That margin has to shrink with the gutter, or the hero lands
+     8px narrower than every other block instead of collapsing onto the
+     column exactly. */
+  .article > .wide{ width:min(var(--measure-wide), 100% - var(--space-16)); }
+
   .dbox{ padding:var(--space-24); }
   .dirbox{ padding:20px; }
   /* 292px of inner width cannot carry a 170px name column: stack instead,
