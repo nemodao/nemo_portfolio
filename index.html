@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Partnership System — Case Study</title>
 <meta name="description" content="The infrastructure that turns partner referrals into a revenue channel.">
+<!-- ONE theme-color, no media attribute, driven by JS. A media-query pair
+     ("prefers-color-scheme: light/dark") is deliberately NOT used: the browser
+     picks the first meta whose media matches, so an OS-matched media meta
+     would outrank the JS-updated one and the iOS status bar would follow the
+     system setting instead of this page's manual toggle. Set below before
+     first paint, and again on every toggle. -->
+<meta name="theme-color" id="themeColorMeta" content="#FBFBFA">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -13,7 +20,12 @@
     /* Light is the default: this is a long-form reading surface. */
     var t='light';
     try{ t = localStorage.getItem('nt-theme') || 'light'; }catch(e){}
-    document.documentElement.setAttribute('data-theme', t==='dark'?'dark':'light');
+    t = (t==='dark') ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', t);
+    /* Runs in <head>, so the iOS status bar is already correct on the first
+       frame rather than flashing the light value and then correcting. */
+    var m = document.getElementById('themeColorMeta');
+    if(m) m.setAttribute('content', t==='dark' ? '#242424' : '#FBFBFA');
   })();
 </script>
 <style>
@@ -151,6 +163,7 @@
   --notice-title:#C7FF20;
   --notice-ink:#E6F5C4;
   --notice-x:#B7CE86;
+  --shadow-notice:0 4px 16px -6px rgba(0,0,0,0.55);
 }
 
 /* ---------- LIGHT — same system, lights on ---------- */
@@ -197,6 +210,7 @@
   --notice-title:#4F6800;
   --notice-ink:#2E3A08;
   --notice-x:#4A5C10;
+  --shadow-notice:0 4px 16px -6px rgba(20,20,20,0.16);
 }
 
 /* ---------- BASE ---------- */
@@ -367,7 +381,13 @@ p{ margin:0 0 var(--gap-para); }   /* governs NESTED contexts; article children 
   background:var(--notice-bg);
   border:1px solid var(--notice-border);
   border-radius:14px;
-  box-shadow:var(--shadow-modal);
+  /* NOT --shadow-modal. That token is built for a panel floating in the middle
+     of a scrimmed viewport: 0 24px 48px -12px, which reaches 24 + 48/2 - 12 =
+     36px below its own box at alpha .72 in dark. This bar sits 16px off the
+     bottom edge, so 20px of that dark band was clipped by the viewport — it
+     read as a hard line across the foot of the screen with a fade above it,
+     worst on a phone. A toast needs a short shadow, not a modal's. */
+  box-shadow:var(--shadow-notice);
   font-size:13px; line-height:1.5; color:var(--notice-ink);
 }
 .disclosure-text{ flex:1; min-width:0; }
@@ -1643,6 +1663,8 @@ footer p{
     document.getElementById('themeToggle').addEventListener('click', function(){
       var next = root.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', next);
+      var meta = document.getElementById('themeColorMeta');
+      if(meta) meta.setAttribute('content', next==='dark' ? '#242424' : '#FBFBFA');
       try{ localStorage.setItem('nt-theme', next); }catch(e){}
     });
   })();
