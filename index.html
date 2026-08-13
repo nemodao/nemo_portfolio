@@ -23,28 +23,67 @@
     t = (t==='dark') ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', t);
 
-    /* iOS Safari reads theme-color when the tag ENTERS the document. Mutating
-       an existing tag's content attribute updates the DOM but frequently does
-       not repaint the status bar — it keeps showing the colour it first read.
-       So never mutate: drop every theme-color tag and append a fresh one, which
-       Safari treats as a new declaration and re-reads.
-       Removing ALL of them (not just the first) is what keeps repeated toggles
-       from accumulating duplicate tags.
+    /* iOS Safari reads theme-color when the tag ENTERS the document. Three
+       things stack here, because each alone was tested on device and failed:
+
+       1. Never mutate the tag. Writing a new `content` onto a tag already in
+          <head> updates the DOM and leaves the status bar on the colour Safari
+          first read. Every theme-color tag is removed and a fresh one appended.
+          Removing ALL of them, not just the first, is what stops repeated
+          toggles accumulating duplicates.
+       2. Append on a fresh frame. Safari often only re-reads the tag when the
+          insertion lands in a new frame, so the append is deferred through two
+          nested requestAnimationFrames — one frame is not always enough, and
+          two costs ~32ms, which no one can perceive on a mode toggle.
+       3. Nudge a repaint after inserting. Reading offsetHeight forces a
+          synchronous layout and the no-op scrollTo asks for a paint; neither
+          changes a single pixel, so there is no flash of page content. The
+          crude display:none trick is deliberately avoided — it reflows the
+          whole document and visibly blinks.
+
+       `immediate` skips the rAF deferral for the boot call: at first paint
+       there is nothing to repaint yet, and waiting two frames would show the
+       fallback light bar before correcting — a flash on exactly the thing this
+       is meant to fix.
+
        Exposed on window because the toggle handler lives in a separate script
-       block at the end of the document and must use the same implementation. */
-    window.setThemeColor = function(mode){
+       block at the end of the document and must share this implementation. */
+    var themeColorFrame = 0;
+    window.setThemeColor = function(mode, immediate){
       var colour = (mode === 'dark') ? '#242424' : '#FBFBFA';
-      var old = document.head.querySelectorAll('meta[name="theme-color"]');
-      for (var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
-      var meta = document.createElement('meta');
-      meta.setAttribute('name', 'theme-color');
-      meta.setAttribute('content', colour);
-      document.head.appendChild(meta);
+
+      function purge(){
+        var old = document.head.querySelectorAll('meta[name="theme-color"]');
+        for (var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
+      }
+      function insert(){
+        purge();                       /* re-run: a fast double-toggle may have
+                                          queued another tag in between */
+        var meta = document.createElement('meta');
+        meta.setAttribute('name', 'theme-color');
+        meta.setAttribute('content', colour);
+        document.head.appendChild(meta);
+        if (document.body) {
+          void document.body.offsetHeight;                    /* forces layout */
+          window.scrollTo(window.scrollX, window.scrollY);    /* asks for paint */
+        }
+      }
+
+      purge();
+      if (immediate || !window.requestAnimationFrame) { insert(); return colour; }
+      /* one pending swap at a time, or a fast double-toggle appends twice */
+      if (themeColorFrame) cancelAnimationFrame(themeColorFrame);
+      themeColorFrame = requestAnimationFrame(function(){
+        themeColorFrame = requestAnimationFrame(function(){
+          themeColorFrame = 0;
+          insert();
+        });
+      });
       return colour;
     };
-    /* Runs in <head>, so the status bar is already correct on the first frame
-       rather than flashing the fallback light value and then correcting. */
-    window.setThemeColor(t);
+    /* Runs in <head>: synchronous, so the status bar is correct on the first
+       frame rather than flashing the fallback light value and then correcting. */
+    window.setThemeColor(t, true);
   })();
 </script>
 <style>
@@ -1682,9 +1721,9 @@ footer p{
     document.getElementById('themeToggle').addEventListener('click', function(){
       var next = root.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
       root.setAttribute('data-theme', next);
-      /* Swap the tag, never its attribute — see setThemeColor() in <head>.
-         Ordered after data-theme so the page has already recoloured if Safari
-         repaints synchronously off the new declaration. */
+      /* Swap the tag on a fresh frame, never mutate it — see setThemeColor()
+         in <head>. Ordered after data-theme so the page has already recoloured
+         by the time the new declaration lands. */
       if (window.setThemeColor) window.setThemeColor(next);
       try{ localStorage.setItem('nt-theme', next); }catch(e){}
     });
