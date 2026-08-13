@@ -49,8 +49,11 @@
   --text-display:72px;     --leading-display:1;
 
   /* article layer: prose runs at the 18px step with reading leading,
-     and the title caps below display — 72px is landing-page scale. */
-  --leading-prose:1.6;
+     and the title caps below display — 72px is landing-page scale.
+     1.5, not 1.6: the type size already sits at the low end of the long-form
+     band, so the density complaint was leading and paragraph air, not glyph
+     size. 1.5 lands between the news register (1.4) and long-form (1.6). */
+  --leading-prose:1.5;
 
   /* Article type ladder — one size per role, no shared steps.
      desktop: 16 -> 18 -> 20 -> 21 -> 22 -> 30 -> 44
@@ -72,7 +75,7 @@
 
   /* Vertical rhythm scale — ascending, each step visibly distinct:
      line 28.8 -> paragraph 28 -> sub-head 48 -> figure 56 -> section 80 */
-  --gap-para:28px;          /* p -> p                          */
+  --gap-para:20px;          /* p -> p — was 28 (a full blank line at 1.6) */
   --gap-block:48px;         /* .figures, details, list, note, h3.sub, .pull */
   --gap-figure:56px;        /* figures, symmetric               */
   --gap-section:80px;       /* .sec / .burst, uniform           */
