@@ -268,10 +268,13 @@ a:hover{ text-decoration-color:var(--ink); }
      caption next to it rather than as one lockup. */
   width:26px; height:26px; flex:none;
   border-radius:50%; object-fit:cover; object-position:top center;
-  /* Same reason as the hero portrait: the PNG is a cut-out, so the fill is what
-     makes the circle. --surface-raised here, because the bar itself is canvas
-     and a canvas disc on a canvas bar would be invisible. */
-  background:var(--surface-raised);
+  /* The PNG is a cut-out, so the fill is what makes the circle.
+     --ink, which is the one token that already inverts the way this wants:
+     #141414 in light, #fafafa in dark. So the disc reads black on the light bar
+     and white on the dark one — opposite the bar in both, which is what makes a
+     26px circle hold its own against the wordmark beside it. --surface-raised
+     was only one step off the bar and the disc kept dissolving into it. */
+  background:var(--ink);
 }
 
 /* The sentinel is a zero-size marker, not a spacer: absolute so it adds no
