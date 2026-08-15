@@ -1789,6 +1789,120 @@ footer p{
     var vids = document.querySelectorAll('video.eco, video.contact-bg, video.hero-bg');
     for (var i=0;i<vids.length;i++){ vids[i].autoplay = false; vids[i].pause(); }
   })();
+
+  /* Decode only what is actually on screen.
+     Measured on a 390px viewport, all four elements were playing at once:
+       .hero-bg     6390x1515   9.68 MP/frame   into a 390px box
+       .eco-wide    4794x2250  10.79 MP/frame   into display:none
+       .eco-tall    1851x2700   5.00 MP/frame   into a 358px box
+       .contact-bg  6390x1515   9.68 MP/frame   into a 390px box
+     35.1 MP per frame, about four times a 4K stream, on a phone — and two of
+     those are the same file decoded by two independent elements. Phone decoders
+     run out of instances, the platform starts evicting them, and playback
+     stalls and resumes at random. That is the stutter.
+
+     Two things are wrong and this fixes both.
+
+     autoplay overrides preload="none", so the .eco twin that CSS hides was
+     still being fetched and decoded in full — the largest video on the page,
+     for nobody. Pausing is not enough to give the decoder back, so the hidden
+     twin has its src pulled and load() called, which frees the buffer too. The
+     src is parked on the element so a breakpoint change can put it back.
+
+     The rest is viewport gating. Nothing here is ever meant to be watched — two
+     are aria-hidden grounds — so a video that has scrolled away has no reason
+     to hold a decoder. The hero and the contact band sit ~4000px apart and can
+     never be on screen together, which is also what stops contact-bg.webm from
+     being decoded twice at the same moment.
+
+     autoplay stays on the elements: with no JS the page still animates, and the
+     observer's first callback pauses the off-screen ones within a frame. */
+  (function(){
+    var vids = [].slice.call(document.querySelectorAll('video'));
+    if (!vids.length) return;
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    /* getClientRects() is empty for a display:none element, which is exactly the
+       hidden .eco twin and nothing else — offsetParent would also report null
+       for anything positioned fixed. */
+    function displayed(v){ return v.getClientRects().length > 0; }
+
+    function release(v){
+      if (v.getAttribute('data-src')) return;
+      v.setAttribute('data-src', v.getAttribute('src'));
+      v.removeAttribute('src');
+      v.load();
+    }
+    function restore(v){
+      var s = v.getAttribute('data-src');
+      if (!s) return;
+      v.setAttribute('src', s);
+      v.removeAttribute('data-src');
+      /* load() resets playbackRate to defaultPlaybackRate, which the rate block
+         above already set to 0.625 — so the slowed cadence survives this. */
+      v.load();
+    }
+
+    /* Plain geometry rather than IntersectionObserver. Reading four rects on a
+       throttled scroll costs nothing, and it is synchronous: the state is
+       whatever the last sync() decided, inspectable at any moment. The
+       observer's verdict arrives asynchronously and out of band, which is how
+       the autoplay bug below hid in the first place. The path that matters most
+       is resume-on-scroll, because its failure mode is "the video never plays
+       at all" — strictly worse than the stutter this set out to fix — so it is
+       worth having in a form that can be reasoned about end to end. */
+    var MARGIN = 200;   /* wake it just before the edge, so it is running by the time it arrives */
+    function onScreen(v){
+      var r = v.getBoundingClientRect();
+      return r.bottom > -MARGIN && r.top < (window.innerHeight || 0) + MARGIN;
+    }
+
+    function sync(){
+      var mayPlay = !(reduce && reduce.matches);
+      vids.forEach(function(v){
+        if (!displayed(v)){ release(v); return; }
+        restore(v);
+        if (mayPlay && onScreen(v)){
+          v.autoplay = true;
+          if (v.paused){
+            var p = v.play();
+            if (p && p.catch) p.catch(function(){});  /* autoplay refusal is not an error worth throwing */
+          }
+        } else {
+          /* Clearing the attribute is the part that actually works. preload="none"
+             means the first verdict lands before any data has arrived, so the
+             element is still paused and pause() is a no-op — and then the media
+             loads and autoplay starts it regardless. Guarding only on !v.paused
+             here made the whole gate do nothing. */
+          v.autoplay = false;
+          if (!v.paused) v.pause();
+        }
+      });
+    }
+
+    /* A timer, not requestAnimationFrame. rAF only runs while frames are being
+       produced, so a scroll handler that latches a "queued" flag and waits for
+       one deadlocks anywhere frames stop — the flag stays set and no later
+       scroll ever schedules again. Nothing here needs frame accuracy: the gate
+       reads four rects and the 200px margin already covers a fast flick. */
+    var timer = null;
+    function schedule(){
+      if (timer) return;
+      timer = setTimeout(function(){ timer = null; sync(); }, 100);
+    }
+
+    sync();
+    addEventListener('scroll', schedule, { passive:true });
+    /* resize covers the breakpoint change that swaps which .eco twin CSS shows,
+       so the released one and the restored one trade places. */
+    addEventListener('resize', schedule);
+    addEventListener('orientationchange', schedule);
+    /* Coming back from a background tab or the bfcache: the platform may have
+       torn playback down while we were away, and no scroll follows to notice. */
+    addEventListener('pageshow', schedule);
+    document.addEventListener('visibilitychange', schedule);
+    if (reduce && reduce.addEventListener) reduce.addEventListener('change', sync);
+  })();
 </script>
 
 </body>
