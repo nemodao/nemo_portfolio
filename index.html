@@ -130,6 +130,7 @@
 :root,
 [data-theme="dark"]{
   color-scheme:dark;
+  --veil:rgba(36,36,36,.52);   /* --canvas at 52%; see the light block */
   --canvas:#242424;
   --surface:#242424;
   --surface-raised:#323232;
@@ -157,6 +158,13 @@
 /* ---------- LIGHT — same system, lights on ---------- */
 [data-theme="light"]{
   color-scheme:light;
+  /* --canvas at 52%, so the page stays legible through the veil rather than
+     being hidden by it. Written out rather than derived from --canvas: relative
+     colour syntax is too new to rely on here.
+     --veil, not --scrim: --scrim already exists a few lines down as the modal's
+     backdrop, and it is a much heavier wash (0.42 of near-black) because a modal
+     wants the page suppressed. This one wants it visible. */
+  --veil:rgba(251,251,250,.52);
   --canvas:#FBFBFA;
   --surface:#FBFBFA;
   --surface-raised:#F4F4F3;
@@ -1206,6 +1214,67 @@ h1.title{
 .burst .burst-contact a{ color:inherit; text-decoration:none; }
 .burst .burst-contact a:hover{ text-decoration:underline; text-underline-offset:3px; }
 
+/* ---------- loading veil ----------
+   Frosted glass over the page rather than an opaque splash: the scrim is the
+   canvas at 52% and the blur does the rest, so what is behind stays readable as
+   shape and colour while nothing on it can be mistaken for finished.
+   It covers everything, including the top bar (45) and the theme toggle (50). */
+.loader{
+  position:fixed; inset:0; z-index:120;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:var(--space-24);
+  background:var(--veil);
+  -webkit-backdrop-filter:blur(22px) saturate(1.2);
+  backdrop-filter:blur(22px) saturate(1.2);
+  transition:opacity .5s ease, visibility .5s;
+}
+.loader.is-done{ opacity:0; visibility:hidden; pointer-events:none; }
+
+/* currentColor on the paths, so the mark takes the same step down to
+   --accent-hover in light mode that .folder-dot does — full lime on a near-white
+   ground is too hot. */
+.loader-mark{
+  display:block; width:53px; height:53px;
+  color:var(--accent);
+  animation:loader-breathe 1.7s ease-in-out infinite;
+}
+[data-theme="light"] .loader-mark{ color:var(--accent-hover); }
+@keyframes loader-breathe{
+  0%, 100%{ transform:scale(.82); opacity:.7; }
+  50%     { transform:scale(1.12); opacity:1; }
+}
+
+/* The word is painted by a gradient clipped to the glyphs, and the gradient is
+   what moves — a bright band travelling through the letters. background-size is
+   280% so the band is narrower than the word and reads as a sweep rather than
+   the whole word pulsing. */
+.loader-text{
+  margin:0;
+  font-family:var(--font-mono);
+  font-size:var(--text-caption);
+  letter-spacing:var(--tracking-mono);
+  text-transform:uppercase;
+  background-image:linear-gradient(100deg,
+    var(--ink-3) 0 42%, var(--ink) 50%, var(--ink-3) 58% 100%);
+  background-size:280% 100%;
+  -webkit-background-clip:text; background-clip:text;
+  color:transparent; -webkit-text-fill-color:transparent;
+  animation:loader-sweep 1.7s linear infinite;
+}
+@keyframes loader-sweep{
+  from{ background-position:170% 0; }
+  to  { background-position:-70% 0; }
+}
+
+/* Someone who asked the OS for less motion still needs to know the page is
+   working, so the veil stays — only the movement goes, and the word needs its
+   fill put back because the sweep was the only thing painting it. */
+@media (prefers-reduced-motion:reduce){
+  .loader-mark, .loader-text{ animation:none; }
+  .loader-mark{ transform:none; opacity:1; }
+  .loader-text{ color:var(--ink-3); -webkit-text-fill-color:var(--ink-3); }
+}
+
 /* ---------- footer ---------- */
 footer{
   border-top:1px solid var(--border);
@@ -1323,6 +1392,21 @@ footer p{
 </style>
 </head>
 <body>
+
+<!-- The mark is inlined rather than linked: a loading indicator that has to
+     fetch its own artwork before it can appear is no indicator at all. 1.3 KB
+     of path data costs less than the request would. images/logo.svg holds the
+     same mark as a file for anything else that wants it. -->
+<div class="loader" id="loader" role="status" aria-live="polite">
+  <svg class="loader-mark" viewBox="0 0 53 53" fill="currentColor" aria-hidden="true" focusable="false">
+    <path d="M29.3322 16.7362C29.3322 17.7473 30.5546 18.2536 31.2696 17.5387L42.7973 6.0109C43.0928 5.71544 43.5719 5.71544 43.8673 6.01091L46.5426 8.68622C46.8381 8.98169 46.8381 9.46074 46.5426 9.7562L34.6068 21.6913C33.8918 22.4063 34.3982 23.6287 35.4093 23.6287H52.2044C52.6222 23.6287 52.9609 23.9675 52.9609 24.3853V27.7608C52.9609 28.1787 52.6222 28.5174 52.2044 28.5174H35.3849C32.0421 28.5174 29.3322 31.2273 29.3322 34.5701V52.2044C29.3322 52.6222 28.9935 52.9609 28.5756 52.9609H24.3853C23.9675 52.9609 23.6287 52.6222 23.6287 52.2044V35.4092C23.6287 34.3981 22.4063 33.8917 21.6914 34.6067L10.1629 46.1352C9.86737 46.4307 9.38828 46.4307 9.09283 46.1351L6.41818 43.4599C6.12277 43.1645 6.1228 42.6855 6.41824 42.39L18.3535 30.4548C19.0684 29.7399 18.5621 28.5174 17.551 28.5174H0.756585C0.338735 28.5174 0 28.1787 0 27.7608V24.3853C0 23.9675 0.338735 23.6287 0.756585 23.6287H17.576C20.9189 23.6287 23.6287 20.9188 23.6287 17.576V0.756584C23.6287 0.338734 23.9675 0 24.3853 0H28.5756C28.9935 0 29.3322 0.338735 29.3322 0.756585V16.7362Z"/>
+    <circle cx="14.3731" cy="13.6188" r="3.78327"/>
+    <circle cx="38.5841" cy="37.0728" r="3.78327"/>
+  </svg>
+  <p class="loader-text">Loading</p>
+</div>
+<!-- Only JS can take the veil down, so without JS it must never go up. -->
+<noscript><style>.loader{ display:none; }</style></noscript>
 
 
 <header class="topbar" id="topbar">
@@ -1851,7 +1935,13 @@ footer p{
        is resume-on-scroll, because its failure mode is "the video never plays
        at all" — strictly worse than the stutter this set out to fix — so it is
        worth having in a form that can be reasoned about end to end. */
-    var MARGIN = 200;   /* wake it just before the edge, so it is running by the time it arrives */
+    /* 1000, not 200. preload="none" means waking a video is also when it starts
+       downloading, and 200px of warning is a fraction of a second — long enough
+       to arrive at a black rectangle that is still fetching. A full screen of
+       lead time lets the first frames land before the band is in view.
+       contact-bg.webm is the same file the hero already pulled, so it comes from
+       cache; this margin is really buying time for ecosystem-*.webm. */
+    var MARGIN = 1000;
     function onScreen(v){
       var r = v.getBoundingClientRect();
       return r.bottom > -MARGIN && r.top < (window.innerHeight || 0) + MARGIN;
@@ -1902,6 +1992,76 @@ footer p{
     addEventListener('pageshow', schedule);
     document.addEventListener('visibilitychange', schedule);
     if (reduce && reduce.addEventListener) reduce.addEventListener('change', sync);
+  })();
+
+  /* Hold the veil until the first two sections have something to show.
+     The complaint this answers is a page that reports itself loaded while the
+     hero is still a black rectangle waiting on a webm. Only sections 1 and 2 are
+     gated — waiting on the whole document would trade one wrong impression for a
+     much longer wait. */
+  (function(){
+    var veil = document.getElementById('loader');
+    if (!veil) return;
+
+    /* A ceiling, not a target. A dead asset, a stalled connection or a codec the
+       browser will not touch must not leave someone staring at a frosted pane. */
+    var CEILING = 9000;
+
+    var settled = false;
+    function finish(){
+      if (settled) return;
+      settled = true;
+      veil.classList.add('is-done');
+      /* Removed rather than left hidden: backdrop-filter on a full-screen layer
+         keeps costing compositing work even at opacity 0. */
+      setTimeout(function(){
+        if (veil.parentNode) veil.parentNode.removeChild(veil);
+      }, 600);
+    }
+
+    /* Starts at 1 so that registering the last asset cannot drop the count to
+       zero before the first one has been examined. The sentinel is released
+       once the whole list is in. */
+    var outstanding = 1;
+    function done(){ if (--outstanding === 0) finish(); }
+
+    function await_(node, events){
+      outstanding++;
+      var fired = false;
+      function hit(){
+        if (fired) return;
+        fired = true;
+        events.forEach(function(e){ node.removeEventListener(e, hit); });
+        done();
+      }
+      events.forEach(function(e){ node.addEventListener(e, hit); });
+    }
+
+    var imgs = [].slice.call(
+      document.querySelectorAll('.hero-band img, #case-studies img'));
+    imgs.forEach(function(img){
+      if (img.complete && img.naturalWidth > 0) return;
+      /* These carry loading="lazy", which is right for them in general and wrong
+         while something is waiting on them: a lazy image below the fold may not
+         be requested at all, and the veil would then sit there until the ceiling
+         expired. If it is worth waiting for, it is worth fetching now. */
+      img.loading = 'eager';
+      await_(img, ['load', 'error']);
+    });
+
+    var vids = [].slice.call(document.querySelectorAll('.hero-band video'));
+    vids.forEach(function(v){
+      if (v.readyState >= 3) return;     /* HAVE_FUTURE_DATA — a frame exists to paint */
+      /* preload="none" plus reduced motion, or any other reason the gate above
+         decides not to play this, would mean no data ever arrives and no event
+         ever fires. Asking for the data directly is independent of whether it is
+         going to be played. */
+      v.preload = 'auto';
+      await_(v, ['canplay', 'loadeddata', 'error']);
+    });
+
+    done();                       /* release the sentinel */
+    setTimeout(finish, CEILING);
   })();
 </script>
 
