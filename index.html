@@ -883,19 +883,19 @@ h1.title{
      element's border box, so the fade stays pinned to the edges while the cards
      scroll underneath. An absolutely-positioned overlay would be a child of the
      scroll container and would slide away with the content.
-     Both widths default to 0, which makes the gradient fully opaque, and script
-     raises only the side that actually has something hidden behind it. */
-  --fade-l:0px;
+     The right edge only. A fade on the left marks track already covered, which
+     the reader has no decision left to make about; the right edge is the one
+     saying there is more. Keeping both made the strip look masked at both ends
+     mid-scroll rather than pointing anywhere.
+     The width defaults to 0, which makes the gradient fully opaque, and script
+     raises it only while something is actually hidden off the right. */
   --fade-r:0px;
   -webkit-mask-image:linear-gradient(to right,
-    transparent 0, #000 var(--fade-l),
     #000 calc(100% - var(--fade-r)), transparent 100%);
           mask-image:linear-gradient(to right,
-    transparent 0, #000 var(--fade-l),
     #000 calc(100% - var(--fade-r)), transparent 100%);
 }
 .strip::-webkit-scrollbar{ display:none; }
-.strip.fade-l{ --fade-l:44px; }
 .strip.fade-r{ --fade-r:44px; }
 /* While a drag is in flight, a stray text selection dragged across the cards
    looks broken. The cursor flips to match. */
@@ -1799,12 +1799,12 @@ footer p{
 
     Array.prototype.forEach.call(strips, function(s){
 
-      /* --- edge fade: only on a side that actually hides something --- */
+      /* --- edge fade: right side only, and only while it hides something --- */
       function paint(){
         var max = s.scrollWidth - s.clientWidth;
         /* 1px of slack: scrollLeft is fractional on HiDPI and never lands
-           exactly on max, so a strict compare leaves the right fade stuck on. */
-        s.classList.toggle('fade-l', s.scrollLeft > 1);
+           exactly on max, so a strict compare leaves the fade stuck on at the
+           end of the track. */
         s.classList.toggle('fade-r', s.scrollLeft < max - 1);
       }
       s.addEventListener('scroll', paint, {passive:true});
