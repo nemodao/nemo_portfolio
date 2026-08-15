@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Partnership System — Case Study</title>
-<meta name="description" content="The infrastructure that turns partner referrals into a revenue channel.">
+<title>Nemo Dao — Product &amp; Systems</title>
+<meta name="description" content="Head of Product &amp; Platform Architect. I architect the platforms that run FX/CFD brokerages — trading stacks, CRM, partnerships, payments, BI, and AI.">
 <!-- theme-color is for Chromium browsers, which do honour it and DO repaint
      when the content attribute changes at runtime.
 
@@ -12,48 +12,41 @@
      parses, the value is ignored. Safari instead samples the background-color
      of a position:fixed/sticky element sitting within 4px of the top (or 3px
      of the bottom), at least 80% wide and 3px tall, and falls back to <body>.
-     On this page that source is .topbar. Crucially the sample is taken at
-     first render and is never retaken — changing colours from JS does not
-     re-tint the bar, by design. So on iOS the status bar is correct on load
-     and then holds that colour until the page reloads. Four escalating
-     workarounds (re-inserting the tag, deferring through rAF, forcing reflow,
-     mutating twice across frames) were tried on device and none can work,
-     because none of them touch the mechanism Safari actually reads.
+     A 3px fixed strip used to be that source. It has been removed: the top of
+     the page is an animated band now, and an opaque strip pinned over it
+     blacked out the first 3px of the animation — a line whenever the artwork
+     ran bright near the top edge. No colour fixes that; the element itself is
+     the problem, and there is no version of it that is both a valid sample
+     source and invisible over moving content.
+     So on iOS the status bar falls back to <body>, which is --canvas. Chromium
+     still reads the tag below and gets #000000, matching the band.
 
      No media attribute: on browsers that DO read theme-color, the first tag
      whose media matches wins, so an OS-matched media tag would outrank this
      one and follow the system setting instead of the page's own toggle. -->
-<meta name="theme-color" id="themeColorMeta" content="#FBFBFA">
+<meta name="theme-color" id="themeColorMeta" content="#000000">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Manrope is requested as a variable font over 200..800 rather than as static
+     400 + 500 instances. Measured: the variable file is 24,576 bytes against
+     28,244 for the two statics, so this is 3.7 KB LIGHTER and one request
+     instead of two, while unlocking every weight in between. -->
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script>
   (function(){
-    /* Light is the default: this is a long-form reading surface. */
+    /* Light is the default: this is a reading surface, same as the case study. */
     var t='light';
     try{ t = localStorage.getItem('nt-theme') || 'light'; }catch(e){}
     t = (t==='dark') ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', t);
 
     window.setThemeColor = function(mode){
-      /* Chromium reads this and repaints on change. Safari 26 ignores it. */
+      /* Chromium reads this and repaints on change. Safari 26 ignores it.
+         One value for both modes now: the top of the page is the hero band and
+         that is #000000 either way, so a mode-dependent tint would put a light
+         status bar over a black page. */
       var m = document.getElementById('themeColorMeta');
-      if (m) m.setAttribute('content', mode === 'dark' ? '#242424' : '#FBFBFA');
-
-      /* Safari 26: the tint is sampled from the render tree, not from the tag,
-         and a colour change alone does not trigger a fresh sample. Taking the
-         sampled element out of the render tree and putting it back does — that
-         is the only documented lever. display:none is required; opacity or
-         visibility leave the element in the tree and still sampled.
-         Reading offsetHeight between the two writes forces the removal to be
-         laid out, otherwise the pair collapses into one style recalculation
-         and the tree never actually changes. */
-      var strip = document.getElementById('tintStrip');
-      if (strip) {
-        strip.style.display = 'none';
-        void strip.offsetHeight;
-        strip.style.display = '';
-      }
+      if (m) m.setAttribute('content', '#000000');
     };
     /* Runs in <head>, before first paint. */
     window.setThemeColor(t);
@@ -64,7 +57,8 @@
    nexttrade.ai — Design Tokens (inlined)
    Base: Supabase, adopted as dark mode. Lime #C7FF20 replaces
    phosphor green. Light mode is a positional inversion.
-   LAYOUT: long-form article. Single reading column is the spine.
+   LAYOUT: landing page. Content sits in the 940px wide measure;
+   prose inside a section is still capped at the 680px column.
    ============================================================ */
 :root{
   --accent:#C7FF20;
@@ -76,6 +70,7 @@
   --font-mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo,
               Monaco, Consolas, monospace;
 
+  --fw-light:300;   /* the wordmark only */
   --fw-regular:400;
   --fw-medium:500;
 
@@ -91,11 +86,6 @@
   --text-heading:36px;     --leading-heading:1.2;
   --text-display:72px;     --leading-display:1;
 
-  /* article layer: prose runs at the 18px step with reading leading,
-     and the title caps below display — 72px is landing-page scale.
-     1.5, not 1.6: the type size already sits at the low end of the long-form
-     band, so the density complaint was leading and paragraph air, not glyph
-     size. 1.5 lands between the news register (1.4) and long-form (1.6). */
   --leading-prose:1.5;
 
   /* Article type ladder — one size per role, no shared steps.
@@ -106,9 +96,9 @@
   --text-pull:22px;     /* pull-quote             */
   --text-lede:21px;     /* lede + subtitle/deck   */
   --text-subhead:20px;  /* h3.sub                 */
-  --text-dbox-title:24px; /* decision-box title — fills the empty 20->30 rung */
+  --text-dbox-title:24px;
   --text-prose:18px;    /* main body              */
-  --text-nested:16px;   /* deep-dive / list / quote */
+  --text-nested:16px;   /* card / list            */
 
   --space-8:8px;   --space-16:16px;  --space-24:24px;  --space-32:32px;
   --space-40:40px; --space-48:48px;  --space-64:64px;  --space-80:80px;
@@ -116,19 +106,24 @@
 
   --radius-input:8px; --radius-card:16px; --radius-pill:9999px;
 
-  /* Vertical rhythm scale — ascending, each step visibly distinct:
-     line 28.8 -> paragraph 28 -> sub-head 48 -> figure 56 -> section 80 */
-  --gap-para:20px;          /* p -> p — was 28 (a full blank line at 1.6) */
-  --gap-block:48px;         /* .figures, details, list, note, h3.sub, .pull */
-  --gap-figure:56px;        /* figures, symmetric               */
-  --gap-section:80px;       /* .sec / .burst, uniform           */
-  --gap-sec-after:20px;     /* h2 -> first paragraph            */
-  --gap-subhead-after:16px; /* h3.sub -> its first paragraph    */
-  --gap-dbox:32px;          /* decision box -> decision box     */
+  --gap-para:20px;          /* p -> p                          */
+  --gap-block:48px;         /* list, media, sub-head           */
+  --gap-figure:56px;
+  /* 112, not the case study's 80. Same name would be misleading, so it carries
+     a different one: the case study spends --gap-section between .sec blocks
+     INSIDE one article — subsections at paragraph scale. A page section here is
+     a heavier unit, with its own h2, grid and panels. At 80 the step from
+     --gap-block was only 1.67x, close enough that a sub-head boundary and a
+     section boundary read the same on a fast scroll — worst in "Other work",
+     the tallest section, where three h3.sub groups sit 48px apart. 112 makes it
+     2.33x and the two stop competing. Costs ~224px of document height. */
+  --gap-page-section:112px; /* page section -> page section    */
+  --gap-sec-after:20px;     /* h2 -> first paragraph           */
+  --gap-subhead-after:16px; /* h3.sub -> its first block       */
 
   --measure:680px;      /* the reading column — the spine */
-  --measure-wide:940px; /* figures may break to here, never further */
-  --measure-modal:720px;/* dialog panel — just past the 680px column, not a slab */
+  --measure-wide:940px; /* the landing's content width    */
+  --measure-modal:720px;
 }
 
 /* ---------- DARK — the base ---------- */
@@ -139,62 +134,24 @@
   --surface:#242424;
   --surface-raised:#323232;
   --surface-art:#212121;
-  /* The ONE tinted surface on the page. Every other card is canvas-coloured and
-     defined only by its hairline; the three decision boxes deliberately break
-     that so they read as self-contained blocks. Dark lifts, light sinks. */
   --surface-2:#2B2B2B;
-  /* The one RECESSED surface — direction boxes. Sits a step BELOW the canvas,
-     the exact mirror of --surface-2's step above it (1.098:1 down vs 1.096:1
-     up), so the raised and recessed components read as opposite rungs of the
-     same ladder. The hairline gets STRONGER on it (1.52:1 vs 1.39:1 on canvas). */
   --surface-sunken:#1C1C1C;
   --scrim:rgba(0,0,0,0.66);
-  --shadow-modal:0 24px 48px -12px rgba(0,0,0,0.72);
   --border:#3B3B3B;
   --border-strong:#454545;
   --stroke-art:#595959;
-  --ink:#fafafa;        /* headings, numerals, diagram strokes — stays Snow */
-  /* Long body passages only — headings stay at Snow. Snow over Obsidian
-     halates on a long article, so body sits well below it at 204 — 9.67:1
-     on the #242424 canvas (AAA is 7.0). Do not apply this to headings, and
-     note --ink-2 (180) sits just below it: the nested/deep-dive register is
-     only 24 steps darker, so neither may move without the other. */
-  --ink-body:#CCCCCC;
+  --ink:#fafafa;        /* headings, numerals — stays Snow */
+  --ink-body:#CCCCCC;   /* long body passages only */
   --ink-2:#b4b4b4;
   --ink-3:#8B8B8B;
   --ghost-border:#454545;
   --ghost-hover:rgba(255,255,255,0.04);
-  --accent-mark:#C7FF20;   /* numerals, pull rule, figure arrows */
+  --accent-mark:#C7FF20;
   /* Marker wash — alpha on the fill, never the opacity property (that would
-     fade the heading text too). In dark the two contrasts move in OPPOSITE
-     directions as alpha rises: marker-vs-canvas climbs while snow-vs-marker
-     falls, crossing near .47. Chosen after a side-by-side at .20 / .35 / .50:
-        .20  rgb(54,65,21)     marker 1.72:1   text 10.46:1   <- this
-        .35  rgb(81,101,23)    marker 2.83:1   text  6.34:1
-        .50  rgb(109,137,25)   marker 4.68:1   text  3.84:1
-     .20 keeps the marker a quiet tint and leaves the heading text with the
-     most headroom — 10.46:1 clears AA and AAA outright, so the h2 size is
-     no longer load-bearing for contrast. Note there is NO murky mid-zone in
-     dark: separation is monotonic in alpha. The near-1.0 figure that turns up
-     in the history is LIGHT mode, which sits at 1.09:1 and reads on hue. */
+     fade the heading text too). Dark runs .20: lime over obsidian gains
+     luminance fast, so it needs far less than light does. */
   --accent-wash:rgba(199,255,32,0.20);
   --focus:#C7FF20;
-
-  /* Notice bar — the one element allowed to float, tinted in the page's own
-     lime. Dark values are NOT the light ones dimmed: the panel is set just
-     ABOVE the canvas (1.15:1) so it reads as lifted rather than recessed,
-     which is what a toast should do. Measured on #2A3116:
-       body #E6F5C4 11.76:1 · title #C7FF20 11.46:1
-       border #A8D82A 8.08:1 · close #B7CE86 7.87:1
-     The title takes the full accent and the border steps back from it: a 1px
-     rule at full strength would ring the whole bar in the loudest lime on the
-     page, while the same colour as a short bold line reads as a highlight. */
-  --notice-bg:#2A3116;
-  --notice-border:#A8D82A;
-  --notice-title:#C7FF20;
-  --notice-ink:#E6F5C4;
-  --notice-x:#B7CE86;
-  --shadow-notice:0 4px 16px -6px rgba(0,0,0,0.55);
 }
 
 /* ---------- LIGHT — same system, lights on ---------- */
@@ -204,49 +161,39 @@
   --surface:#FBFBFA;
   --surface-raised:#F4F4F3;
   --surface-art:#F0F0EE;
-  --surface-2:#F3F3F1;   /* positional twin of dark's #2B2B2B: one step off canvas */
-  --surface-sunken:#F1F1EF; /* recessed twin of dark's #1C1C1C. Light cannot go
-                               lighter than a near-white canvas, so "recessed"
-                               here is a deeper step than --surface-2, not a
-                               reversed one — 1.092:1 vs the canvas.          */
+  --surface-2:#F3F3F1;
+  --surface-sunken:#F1F1EF;
   --scrim:rgba(20,20,20,0.42);
-  --shadow-modal:0 24px 48px -12px rgba(20,20,20,0.20);
   --border:#E4E4E2;
   --border-strong:#D3D3D0;
-  --stroke-art:#8A8A83; /* 3.05:1 on the art panel — light is the default surface,
-                           so informational line-art is tuned for legibility here
-                           rather than mirroring dark's Graphite exactly */
+  --stroke-art:#8A8A83;
   --ink:#141414;
   --ink-body:#141414;   /* light needs no softening — dark ink on light does not halate */
   --ink-2:#55554F;
-  --ink-3:#6C6C65;      /* clears AA on the art panel (4.64), not just the canvas */
+  --ink-3:#6C6C65;
   --ghost-border:#D3D3D0;
   --ghost-hover:rgba(20,20,20,0.04);
   --accent-mark:#5E7A00;   /* lime hue held (74deg), luminance inverted */
-  /* Marker wash — alpha on the fill, never the opacity property (that would
-     fade the heading text too). Light holds 0.50 while dark runs 0.20: the
-     two canvases are not symmetric here. Lime over near-white barely shifts
-     luminance (1.09:1 even at 0.50), so light needs the alpha to register at
-     all; lime over obsidian gains luminance fast, so dark needs far less. */
+  /* Lime over near-white barely shifts luminance (1.09:1 even at .50), so
+     light needs the alpha to register at all. */
   --accent-wash:rgba(199,255,32,0.50);
   --focus:#141414;
-
-  /* Notice bar, light. Measured on #F4FADF:
-       body #2E3A08 11.36:1 · title #4F6800 5.91:1
-       border #5E7A00 4.60:1 · close #4A5C10 6.92:1
-     Raw lime over near-white sits at 1.09:1 and would vanish, so light works
-     in the hue-held, luminance-inverted accent the headings already use. */
-  --notice-bg:#F4FADF;
-  --notice-border:#5E7A00;
-  --notice-title:#4F6800;
-  --notice-ink:#2E3A08;
-  --notice-x:#4A5C10;
-  --shadow-notice:0 4px 16px -6px rgba(20,20,20,0.16);
 }
 
 /* ---------- BASE ---------- */
 *{ box-sizing:border-box; }
-html{ scroll-behavior:smooth; }
+/* The overscroll colour. Pull past the top of the page — trackpad rubber-band,
+   or a touch drag on iOS — and the browser paints the CANVAS behind the
+   document in the gap it opens. That canvas comes from <body> unless <html>
+   declares a background of its own, and body's is --canvas: a white slab above
+   a black hero, which is what looked wrong.
+   Giving <html> its own background stops body's from propagating. body still
+   paints --canvas across the whole document box, so every section is unchanged;
+   the black only ever shows in the overscroll gap, where it reads as the hero's
+   ground staying put while the content pulls away from it.
+   #000000 is the hero band's ground in both modes, so this does not need a
+   dark-mode variant. */
+html{ scroll-behavior:smooth; background:#000000; }
 body{
   margin:0;
   background:var(--canvas);
@@ -260,8 +207,6 @@ body{
   transition:background .25s ease, color .25s ease;
 }
 ::selection{ background:var(--accent); color:var(--accent-ink); }
-/* Headings stay at full Snow — halation is a long-passage problem, not a
-   short-line one, and the brightness carries the article's hierarchy. */
 h1,h2,h3,h4{ font-weight:var(--fw-regular); margin:0; letter-spacing:var(--tracking); color:var(--ink); }
 code,kbd,samp,pre{ font-family:var(--font-mono); letter-spacing:var(--tracking-mono); }
 :focus-visible{ outline:1px solid var(--focus); outline-offset:3px; }
@@ -269,705 +214,974 @@ code,kbd,samp,pre{ font-family:var(--font-mono); letter-spacing:var(--tracking-m
 a{ color:var(--ink); text-decoration:underline; text-underline-offset:3px; text-decoration-color:var(--border-strong); }
 a:hover{ text-decoration-color:var(--ink); }
 
-/* ============================================================
-   ARTICLE GRID
-   One column holds the prose. Figures may break to --measure-wide.
-   Nothing else spans. No grids of cards anywhere.
-   ============================================================ */
-.article{
-  display:grid;
-  grid-template-columns:
-    minmax(var(--space-24), 1fr)
-    min(var(--measure), 100% - var(--space-48))
-    minmax(var(--space-24), 1fr);
-}
-.article > *{ grid-column:2; }
-/* The wide break, now used by the HERO FIGURE ONLY. Every other article-level
-   figure sits flush in the reading column, so the page has one deliberate
-   full-bleed moment at the top and an unbroken 680px measure thereafter.
-   Starting at grid line 2 pins the left edge flush with the column, so the
-   left gutter — where the sticky TOC lives — is never encroached on. The
-   width cap is measured against the remaining area (column + right gutter)
-   minus one page margin, so on a narrow desktop the figure extends less
-   rather than reaching the viewport edge; at mobile it collapses to the
-   column exactly. */
-.article > .wide{
-  grid-column:2 / -1;
-  width:min(var(--measure-wide), 100% - var(--space-24));
-  margin-inline:0;
-}
-
-/* ---------- Safari 26 tint source ----------
-   Safari 26 ignores theme-color and instead samples the background-color of a
-   fixed/sticky element within 4px of the top, >=80% wide and >=3px tall.
-   On this page that was .topbar — but .topbar is 88%-alpha canvas over a 10px
-   backdrop blur, and Safari reads background-color AND backdrop-filter, so it
-   was sampling a translucent value rather than the canvas itself.
-   This strip is the exact canvas colour, fully opaque, 3px tall (the
-   documented minimum) and pinned at top:0, so it wins the sample and the
-   colour is exact. pointer-events:none so it cannot swallow taps on the bar
-   beneath it, and it is invisible because it sits on canvas-coloured chrome.
-   It is also the lever the toggle uses: WebKit re-evaluates tinting when the
-   render tree changes, so dropping this element and restoring it is the one
-   documented way to make Safari take a fresh sample at runtime. */
-.tint-strip{
-  position:fixed; top:0; left:0; width:100%; height:3px;
-  background:var(--canvas);
-  pointer-events:none; z-index:60;
-}
-
-/* ---------- top bar ---------- */
+/* ---------- scroll-in top bar ----------
+   Hidden until the hero is 60% scrolled past, then slides down. Fixed, so it
+   does not take part in layout and nothing below it shifts when it appears.
+   z-index 45 keeps it under the floating toggle (50) and over the page.
+   visibility, not just opacity: it keeps the bar out of the tab order and away
+   from screen readers while it is off-stage. */
 .topbar{
-  position:sticky; top:0; z-index:40;
+  position:fixed; top:0; left:0; right:0; z-index:45;
   background:var(--canvas); border-bottom:1px solid var(--border);
+  transform:translateY(-100%); opacity:0; visibility:hidden;
+  transition:transform .28s ease, opacity .28s ease, visibility 0s linear .28s;
 }
-@supports (backdrop-filter:blur(2px)){
-  .topbar{ background:color-mix(in srgb, var(--canvas) 88%, transparent); backdrop-filter:blur(10px); }
+.topbar.is-visible{
+  transform:none; opacity:1; visibility:visible;
+  transition:transform .28s ease, opacity .28s ease, visibility 0s;
+}
+@media (prefers-reduced-motion:reduce){
+  .topbar, .topbar.is-visible{ transition:none; }
 }
 .topbar-inner{
   max-width:var(--measure-wide); margin:0 auto; padding:0 var(--space-24);
-  height:64px; display:flex; align-items:center; justify-content:space-between; gap:16px;
+  height:60px; display:flex; align-items:center; justify-content:space-between; gap:16px;
 }
-/* A label, not a link — there is no portfolio index to return to yet, so the
-   "←" pseudo-element and the hover colour were removed along with the href.
-   An arrow that goes nowhere is worse than no arrow. */
+/* A label, not a link — this IS the index, so there is nowhere to go back to.
+   Set in the sans at normal tracking, not the mono at 0.1em: uppercase-ish
+   wide-tracked monospace is the house style of every generated template, and it
+   was the one thing on the bar not speaking the page's own voice. Manrope
+   medium matches the name at the other end of the bar, so the two ends read as
+   a pair. */
 .brand{
-  font-family:var(--font-mono); font-size:var(--text-caption);
-  letter-spacing:var(--tracking-mono); color:var(--ink-2);
-  display:inline-flex; align-items:center; gap:8px;
+  /* Photo and words are one lockup now, so the mark carries the flex box. */
+  display:inline-flex; align-items:center; gap:10px;
+  font-family:var(--font-sans);
+  /* Nothing here leans on weight. 300 sits a step BELOW the headings' 400, and
+     what still makes it read as a mark is the tracking: -0.03em is roughly 4x
+     the body's -0.007em, which locks the letters into one shape rather than a
+     row of words. Size stays a little above the body ladder — 17 against the
+     14 of --text-body-sm — so it leads without shouting. */
+  font-size:17px; font-weight:var(--fw-light); letter-spacing:-0.03em;
+  color:var(--ink);
 }
-.topbar .right{ display:flex; align-items:center; gap:12px; }
-.topbar .role{
+.tb-photo{
+  /* Scaled with the words: a 30px disc beside 17px type read as a badge with a
+     caption next to it rather than as one lockup. */
+  width:26px; height:26px; flex:none;
+  border-radius:50%; object-fit:cover; object-position:top center;
+  /* Same reason as the hero portrait: the PNG is a cut-out, so the fill is what
+     makes the circle. --surface-raised here, because the bar itself is canvas
+     and a canvas disc on a canvas bar would be invisible. */
+  background:var(--surface-raised);
+}
+
+/* The sentinel is a zero-size marker, not a spacer: absolute so it adds no
+   height, and the hero is the containing block for its 60% offset. */
+.hero{ position:relative; }
+.hero-sentinel{
+  position:absolute; top:60%; left:0;
+  width:1px; height:1px; pointer-events:none;
+}
+
+/* ---------- career timeline ----------
+   The case study's module-list shape: a fixed label column, a hairline between
+   rows, no bullets and no boxes. The year takes the label column so the rows
+   read as one vertical progression rather than four separate entries. */
+/* The rail is decorative — it carries no information the years do not already
+   give. It lives entirely in pseudo-elements so the markup stays a plain <ol>
+   and a screen reader hears four dated entries, not a diagram.
+   --rail is the gutter the rows are inset by; every piece of the rail is drawn
+   inside it, which is also why the row hairlines start clear of the line
+   instead of cutting across it. */
+.timeline{
+  --rail:28px;
+  list-style:none; margin:0;
+  padding:0 0 var(--space-16) var(--rail);
+  position:relative;
+}
+/* The line. Starts at the first dot's centre rather than at 0, so it grows out
+   of that dot instead of hanging above it. */
+.timeline::before{
+  content:""; position:absolute;
+  left:4px; top:9px; bottom:9px; width:1px;
+  background:var(--border);
+}
+/* The arrowhead, pointing down the page — later years are further down, so down
+   is the future. clip-path rather than the border triangle trick: it centres on
+   the 9px dot column exactly, where border widths would need a half pixel. */
+.timeline::after{
+  content:""; position:absolute;
+  left:0; bottom:0; width:9px; height:7px;
+  background:var(--border);
+  clip-path:polygon(0 0, 100% 0, 50% 100%);
+}
+.timeline > li{
+  position:relative;
+  display:grid; grid-template-columns:120px 1fr; gap:var(--space-24);
+  align-items:baseline;
+  padding:var(--space-16) 0; border-top:1px solid var(--border);
+}
+/* One dot per year, hung off the year label rather than off the row.
+   The row is the wrong anchor: it aligns its two columns on the baseline, so
+   the 12px year sits several pixels lower than the row's top edge to meet the
+   16px role beside it — and that offset changes with the layout, which is why
+   a row-anchored dot lined up on mobile and missed by 7px on desktop.
+   Anchored to the label, 50% is the label's own middle in either layout.
+   left is negative because the row already sits inside the gutter; this pulls
+   the dot back out onto the line. */
+.tl-year{ position:relative; }
+.tl-year::before{
+  content:""; position:absolute;
+  left:calc(var(--rail) * -1); top:calc(50% - 4.5px);
+  width:9px; height:9px; border-radius:50%;
+  background:var(--ink-3);
+}
+.timeline > li:first-child{ border-top:0; padding-top:0; }
+.timeline > li:last-child{ padding-bottom:0; }
+.tl-year{
   font-family:var(--font-mono); font-size:var(--text-caption);
   letter-spacing:var(--tracking-mono); color:var(--ink-3);
 }
+.tl-role{ font-size:var(--text-nested); line-height:1.5; font-weight:var(--fw-medium); color:var(--ink); }
+.tl-org{ display:block; margin-top:2px; font-size:var(--text-body-sm); line-height:1.5; color:var(--ink-2); }
+
+/* Two homes, one element. Before the bar arrives it floats at the top-right of
+   the viewport; once the bar is up it slides into the bar's right end and reads
+   as part of it. It is never moved in the DOM — relocating a focusable control
+   would drop keyboard focus mid-interaction — only its fixed offsets change.
+   The background is opaque --canvas, which is also the bar's fill, so in the
+   docked state it sits on the bar seamlessly and in the floating state it stays
+   readable over whatever is scrolling under it.
+   z-index 50 is above the bar's 45: it has to paint ON the bar, not behind it. */
 .theme-toggle{
-  background:transparent; border:1px solid var(--ghost-border);
+  position:fixed; z-index:50;
+  right:calc(var(--space-24) + env(safe-area-inset-right));
+  top:calc(var(--space-24) + env(safe-area-inset-top));
+  /* Same pair the hero panel uses: --surface-raised behind a --border hairline.
+     --canvas over --ghost-border left it reading as a hole rather than a
+     control — on the light page the fill matched the page exactly, and the
+     ghost border is the faintest line in the system. */
+  background:var(--surface-raised); border:1px solid var(--border);
   border-radius:var(--radius-pill); width:34px; height:34px;
   cursor:pointer; color:var(--ink-2);
   display:inline-flex; align-items:center; justify-content:center;
-  transition:border-color .15s ease, color .15s ease;
+  transition:top .28s ease, right .28s ease,
+             border-color .15s ease, color .15s ease;
+}
+/* Docked. The sibling combinator reads the bar's own state, so there is one
+   source of truth for "is the bar up" and no second observer to keep in sync.
+   right: the bar's content column is max-width 940 centred inside 24px of
+   padding, so its right content edge sits (100vw - 940)/2 + 24 from the edge —
+   max() collapses that to a flat 24 once the viewport is narrower than 940 and
+   the column is running full-bleed.
+   top: (60 - 34) / 2 = 13, the bar's height less the button's, halved. */
+.topbar.is-visible ~ .theme-toggle{
+  top:13px;
+  right:max(var(--space-24),
+            calc(50vw - var(--measure-wide) / 2 + var(--space-24)));
+}
+@media (prefers-reduced-motion:reduce){
+  .theme-toggle{ transition:border-color .15s ease, color .15s ease; }
+}
+/* No settle for reduced motion either — the videos are already paused on their
+   first frame, so it goes straight to the resting weight. */
+@media (prefers-reduced-motion:reduce){
+  .hero-bg, .contact-bg{ animation:none; opacity:.35; }
 }
 .theme-toggle:hover{ border-color:var(--stroke-art); color:var(--ink); }
 .theme-toggle svg{ width:15px; height:15px; }
 [data-theme="dark"]  .icon-sun{ display:none; }
 [data-theme="light"] .icon-moon{ display:none; }
 
-/* ---------- table of contents — desktop only, quiet ----------
-   Fixed and anchored to the reading column's left edge. It only appears
-   once there is genuinely room beside the 680px measure: below 1160px the
-   block would collide with the viewport edge, so it is not rendered. */
-.toc{ display:none; }
-@media (min-width:1160px){
-  .toc{
-    display:block; position:fixed; z-index:30;
-    top:120px;
-    right:calc(50% + (var(--measure) / 2) + 36px);
-    width:170px;
-    max-height:calc(100vh - 180px);
-    overflow-y:auto;
-  }
-}
-.toc ul{ list-style:none; margin:0; padding:0; }
-.toc li + li{ margin-top:14px; }
-.toc a{
-  display:block; padding-left:12px;
-  border-left:2px solid transparent;
-  font-size:13px; line-height:1.45; letter-spacing:var(--tracking);
-  color:var(--ink-3); text-decoration:none;
-  transition:color .15s ease, border-color .15s ease;
-}
-.toc a:hover{ color:var(--ink-2); }
-.toc a.active{
-  color:var(--ink); font-weight:var(--fw-medium);
-  border-left-color:var(--accent-mark);
-}
+/* ============================================================
+   PAGE SHELL
+   Every section shares one 940px measure so the grid, the figures
+   and the prose all sit on the same left edge. Prose inside a
+   section is still capped at the 680px reading column.
+   ============================================================ */
+.wrap{ max-width:var(--measure-wide); margin:0 auto; padding-inline:var(--space-24); }
+/* Half the token, not the whole of it. The token names the gap BETWEEN two
+   sections, but here it is spent as padding, which every section pays on both
+   of its own edges — so writing it whole measured 224px, twice what it names.
+   Halving it lands the real gap on 112px (64 on mobile). */
+.section{ padding-block:calc(var(--gap-page-section) / 2); }
+.measure{ max-width:var(--measure); }
+.section > * + *{ margin-top:var(--gap-para); }
 
-/* ---------- masthead ---------- */
-.masthead{ padding:var(--space-24) 0 0; }   /* top gap == the article's 24px horizontal gutter */
-.kicker{
-  font-family:var(--font-mono); font-size:var(--text-caption);
-  letter-spacing:var(--tracking-mono); text-transform:uppercase;
-  color:var(--ink-3); margin:0 0 var(--space-24);
-}
-h1.title{
-  font-size:clamp(30px, 5.4vw, var(--text-title));
-  line-height:1.08; margin:0 0 14px;
-}
-.deck{
-  font-size:var(--text-lede); line-height:1.42;
-  color:var(--ink-2); margin:0;
-}
-/* Byline — title metadata. Sits tight under the h1 so it groups with the
-   title rather than splitting the subtitle from the lede. Plain muted mono:
-   no box, no highlight. --ink-3 clears AA on the canvas (5.11 light / 5.36
-   dark) — the earlier 4.44 problem was against the raised panel, now gone. */
-.byline{
-  margin:0 0 var(--space-32);
-  font-family:var(--font-mono); font-size:var(--text-caption);
-  letter-spacing:var(--tracking-mono); line-height:1.6;
-  color:var(--ink-3);
-}
+/* Major blocks claim more air than a paragraph does. Same distinction the case
+   study draws in its .article rhythm: prose runs on --gap-para, but a list, a
+   rail or a grid is a block and gets --gap-block on both sides of it.
+   :is() rather than :where() on purpose — .team, .grid and .timeline each carry
+   their own margin:0 further down the sheet, and at :where()'s zero specificity
+   this rule would tie with them and lose on source order. :is() takes the
+   specificity of its most specific argument, which puts this at 0-2-0 and
+   settles it. Declared BEFORE the heading rules below so that a heading
+   followed by a block still binds tightly — headings win the tie by order,
+   exactly as they do in the case study. */
+.section > * + :is(.timeline, .team, .grid, .strip, .principles){ margin-top:var(--gap-block); }
+.section > :is(.timeline, .team, .grid, .strip, .principles) + *{ margin-top:var(--gap-block); }
 
-/* ---------- prose ---------- */
-p{ margin:0 0 var(--gap-para); }   /* governs NESTED contexts; article children are zeroed below */
-.lede{ font-size:var(--text-lede); line-height:1.5; color:var(--ink-body); }
-
-/* ---------- disclosure notice ----------
-   A floating toast pinned to the bottom of the viewport. It lives OUTSIDE
-   <article> on purpose: as an article child the rhythm rules would hand it a
-   28px margin-top, and a margin on a fixed element offsets the resolved inset
-   — the bar would sit 28px lower than `bottom` asks for.
-   Centred by left+right insets plus `margin-inline:auto`; no transform, so
-   nothing here becomes a containing block for other fixed descendants.
-   z-index sits under the modal (100) so an open deep-dive covers it, and the
-   page keeps a JS-measured bottom padding so the footer clears the bar. */
-.disclosure{
-  position:fixed; z-index:50;
-  left:var(--space-24); right:var(--space-24); bottom:var(--space-24);
-  margin-inline:auto; max-width:var(--measure-modal);
-  display:flex; align-items:flex-start; gap:var(--space-16);
-  padding:14px 12px 15px var(--space-24);
-  background:var(--notice-bg);
-  border:1px solid var(--notice-border);
-  border-radius:14px;
-  /* NOT --shadow-modal. That token is built for a panel floating in the middle
-     of a scrimmed viewport: 0 24px 48px -12px, which reaches 24 + 48/2 - 12 =
-     36px below its own box at alpha .72 in dark. This bar sits 16px off the
-     bottom edge, so 20px of that dark band was clipped by the viewport — it
-     read as a hard line across the foot of the screen with a fade above it,
-     worst on a phone. A toast needs a short shadow, not a modal's. */
-  box-shadow:var(--shadow-notice);
-  font-size:13px; line-height:1.5; color:var(--notice-ink);
-}
-.disclosure-text{ flex:1; min-width:0; }
-.disclosure-title{
-  font-size:14px; font-weight:600; line-height:1.35;
-  color:var(--notice-title); margin:0 0 3px;
-}
-/* [hidden] has to be restated: the UA sheet's `display:none` for [hidden] is a
-   type-level rule, so the class's `display:flex` beats it and dismissing
-   would silently do nothing. */
-.disclosure[hidden]{ display:none; }
-.disclosure p{ margin:0; }
-/* 28px box around a 13px glyph — the mark stays small while the hit area
-   clears the 24x24 minimum (WCAG 2.5.8) with room to spare. */
-.disclosure-x{
-  flex:none; width:28px; height:28px; align-self:flex-start;
-  display:grid; place-items:center;
-  background:none; border:0; border-radius:var(--radius-pill);
-  color:var(--notice-x); cursor:pointer;
-}
-.disclosure-x svg{ width:13px; height:13px; }
-.disclosure-x:hover{ color:var(--notice-ink); }
-.disclosure-x:focus-visible{ outline:2px solid var(--notice-border); outline-offset:2px; }
-
-@media (max-width:720px){
-  .disclosure{
-    left:var(--space-16); right:var(--space-16); bottom:var(--space-16);
-    gap:8px; padding:12px 8px 12px var(--space-16); border-radius:12px;
-  }
-}
-@media (prefers-reduced-motion:no-preference){
-  .disclosure{ animation:notice-rise .32s ease-out both; }
-}
-@keyframes notice-rise{
-  from{ opacity:0; transform:translateY(12px); }
-  to  { opacity:1; transform:none; }
-}
-strong,b{ font-weight:var(--fw-medium); }
-.code-inline{
-  font-family:var(--font-mono); font-size:0.8em;
-  letter-spacing:var(--tracking-mono);
-  background:var(--surface-raised); border:1px solid var(--border);
-  color:var(--ink); padding:2px 7px; border-radius:var(--radius-input);
-  white-space:nowrap;
-}
-
-/* ---------- section headings — lime marker, hugging the text ----------
-   The highlight is an INLINE background so it wraps the words and stops
-   where they stop; box-decoration-break:clone re-applies the padding and
-   radius to every wrapped line. Identical in both modes — the accent is
-   only ever a fill with dark ink on it, which reads on either canvas. */
-.sec{ scroll-margin-top:104px; }
+/* Section heading — the lime marker.
+   display:inline so the wash hugs the words and box-decoration-break gives
+   every wrapped line its own padding and radius. Zero vertical padding is
+   deliberate: Manrope's inline content area is ~1.375em, far taller than its
+   cap height, so the lime still sits proud of the letters without it, and
+   wrapped lines clear each other at any line-height >= 1.375. The parent .sec
+   owns the spacing, because an inline box ignores vertical margin. */
+/* 24, not the 104 this was while a 64px sticky bar covered the top of the
+   viewport — with no bar there is nothing left to clear. Note this only bites
+   if a .sec is itself the anchor target; the one anchor on the page points at
+   the <section>, whose own padding-block already lands the heading ~64px down.
+   Kept, at the corrected value, for any anchor added later. */
+.sec{ scroll-margin-top:var(--space-24); }
+/* No marker. display:inline is kept even though nothing is painted behind the
+   text now: the parent .sec owns the vertical spacing precisely because an
+   inline box ignores vertical margin, so switching to block here would change
+   the rhythm of every section at once. */
 .sec h2{
   display:inline;
-  /* Zero vertical padding is deliberate. Manrope's inline content area is
-     ~1.375em — far taller than its cap height — so the lime still sits proud
-     of the letters without any padding, and a wrapped heading's blocks clear
-     each other at any line-height >= 1.375. Adding vertical padding pushes
-     that floor above 1.5 and silently reintroduces overlap. */
   font-size:var(--text-h2); line-height:1.45;
-  /* Text is --ink, not --accent-ink: the 30% wash lands pale over the light
-     canvas but dark over the dark one, so the label has to flip with the
-     mode. Dark ink on the dark-mode wash would measure only 2.16:1. */
-  background:var(--accent-wash); color:var(--ink);
-  padding:0 8px; border-radius:3px;
-  -webkit-box-decoration-break:clone;
-          box-decoration-break:clone;
+  color:var(--ink);
 }
+.section > .sec + *{ margin-top:var(--gap-sec-after); }
+
 h3.sub{
   font-size:var(--text-subhead); line-height:1.4;
   font-weight:var(--fw-medium); color:var(--ink);
 }
-/* Decision-box title — the anchor for a whole box of content. Deliberately
-   NOT given the lime wash: that marker stays exclusive to .sec h2, so the
-   "section vs item-within-section" distinction survives. These outrank body
-   copy by size and weight alone. Tighter leading than h3.sub because the
-   larger size no longer needs 1.4 to breathe. */
-.dbox-title{
-  font-size:var(--text-dbox-title); line-height:1.3;
-  font-weight:var(--fw-medium); color:var(--ink);
-  letter-spacing:var(--tracking);
-}
+.section > h3.sub{ margin-top:var(--gap-block); }
+/* The FIRST sub-head after the h2 is the exception: it binds, it does not
+   separate. Without this, "Other work." was the only h2 on the page not sitting
+   --gap-sec-after above its first block — the rule above is 0-2-1 and beat the
+   0-2-0 of `.section > .sec + *`, handing the h2 the same 48px that separates
+   one sub-head group from the next. The h2 stopped owning the group below it
+   and read as a fourth peer in an even 48px stack. Same specificity as the rule
+   it corrects, placed after it, so source order settles the tie. */
+.section > .sec + h3.sub{ margin-top:var(--gap-sec-after); }
+.section > h3.sub + *{ margin-top:var(--gap-subhead-after); }
 
-/* ---------- stat card: label + row as one self-contained unit ----------
-   Same card rule as the A/B/C cluster: the canvas colour, defined only by a
-   hairline. The card border now does the separating, so the row's own
-   top/bottom rules come off inside it. */
-.stat-card{
-  background:var(--canvas);
-  border:1px solid var(--border);
-  border-radius:var(--radius-card);
-  padding:22px;
+/* ---------- hero ----------
+   Two columns: a compact identity rail on the left, the statement on the right.
+   240px + a 48px gap leaves 604 of the 892 content width — a 27/73 split. The
+   rail holds only a 140px photo, a name and a role, so it no longer needs a
+   column as wide as its photo; handing the surplus to the headline buys the h1
+   a wider line before it wraps.
+   align-items:center, not start: the rail is now far shorter than the headline
+   and deck beside it, and hanging it from the top edge would leave it stranded
+   against a tall column of empty space. Centred, the two read as one row. */
+/* Same animation as the contact band, behind the hero this time.
+   The band carries NO data-theme, unlike the ecosystem and contact bands: the
+   folder tab and the panel must keep reading the page's own palette so they
+   stay exactly as they were. Only the band's own fill is forced dark, which is
+   what `screen` needs to dissolve the webm's black ground — against a light
+   backdrop the same blend washes everything out to near-white. */
+.hero-band{
+  --hero-ground:#000000;
+  position:relative; isolation:isolate; overflow:hidden;
+  background:var(--hero-ground);
 }
-.stat-card .kicker{ margin:0 0 16px; }
-.stat-card .figures{ border:0; padding:0; }
+/* No dark-mode override any more: the hero ground is #000000 in both modes.
+   The ramp ran out — --surface-sunken (#1C1C1C, level 28) was the floor of the
+   surface scale, #121212 (level 18) was the darkest neutral anywhere in the
+   file, and neither read as deep enough behind the animation. Zero is the
+   actual floor; there is nothing below it.
+   The ecosystem and contact bands keep --surface-sunken in dark, so the hero
+   stays the one section that goes all the way down. */
+.hero-bg{
+  position:absolute; inset:0; z-index:0;
+  width:100%; height:100%;
+  object-fit:cover; object-position:center;
+  mix-blend-mode:screen;
+  /* 80%. opacity composites AFTER the blend, so the result is
+     0.8 x screen(ground, source) + 0.2 x ground. Where the source is black the
+     blend already returns the ground, so the blacks stay exactly the section's
+     colour and only the lit parts step back toward it — which is what opens the
+     depth rather than flattening it. */
+  opacity:.8;
+  /* Holds that .8 for one second, then settles to .35 over the next 1.5.
+     2.5s total, so the hold ends at the 40% keyframe. One animation with the hold
+     written into the keyframes, rather than a transition on a timer: no script,
+     and the browser owns the whole curve.
+     `forwards` is what keeps .35 after it ends — without it the opacity would
+     snap back to the .8 above the moment the animation finished. */
+  animation:hero-bg-settle 2.5s ease-in-out forwards;
+  pointer-events:none;
+}
+/* Two keyframe sets rather than one driven by a custom property: the two
+   backgrounds start from different values and var() inside a keyframe has a
+   patchy history. Explicit is cheaper than debugging it later. */
+@keyframes hero-bg-settle{
+  0%, 40%{ opacity:.8; }
+  100%{ opacity:.35; }
+}
+.hero-band > .wrap{ position:relative; z-index:1; }
 
-/* ---------- marquee track ----------
-   display:contents on desktop means the track has no box at all — the stats
-   stay direct flex children of the row, so the desktop layout is untouched
-   and the duplicate copy never exists there. On mobile it becomes a real
-   flex row that can be translated.
-   Travel distance: the track holds two identical copies, so one copy plus
-   one gap is (50% + half a gap). Landing exactly there puts copy 2's first
-   stat where copy 1's was — the reset is invisible. */
-.rail-track{ display:contents; }
-@keyframes rail-drift{
-  from{ transform:translateX(0); }
-  to  { transform:translateX(calc(-50% - (var(--space-32) / 2))); }
-}
-
-/* ---------- stat rail: the row plus its scroll affordance ----------
-   The fade must sit ON TOP of the stats, so it is an overlay on a positioned
-   wrapper — a background gradient would paint behind the text and fade
-   nothing. Visibility is driven by a tiny scroll handler, because CSS alone
-   cannot tell whether there is more content to scroll to. */
-.stat-rail{ position:relative; }
-.stat-rail::before,
-.stat-rail::after{
-  content:''; position:absolute; top:1px; bottom:1px; width:44px;
-  pointer-events:none; opacity:0; transition:opacity .18s ease; z-index:1;
-}
-.stat-rail::before{ left:0;  background:linear-gradient(to right, var(--canvas), transparent); }
-.stat-rail::after { right:0; background:linear-gradient(to left,  var(--canvas), transparent); }
-.stat-rail.scrollable:not(.at-start)::before{ opacity:1; }
-.stat-rail.scrollable:not(.at-end)::after{ opacity:1; }
-
-/* ---------- the one inline figures row — hairline bounded ---------- */
-.figures{
-  display:flex; flex-wrap:wrap; gap:var(--space-40) var(--space-64);
-  border-top:1px solid var(--border); border-bottom:1px solid var(--border);
-  padding:var(--space-24) 0;
-}
-.figures .f-num{
-  display:block; font-size:var(--text-subheading); line-height:1.3;
-  font-weight:var(--fw-medium); color:var(--ink);
-  font-variant-numeric:tabular-nums; letter-spacing:var(--tracking);
-}
-.figures .f-lab{
-  display:block; font-size:var(--text-caption); line-height:1.4;
-  color:var(--ink-3); margin-top:4px;
-}
-.arrow{ color:var(--ink-3); margin:0 5px; }
-
-/* ---------- A/B/C cluster — compact stacked units, single column ----------
-   No rules, no boxes, no per-item padding. The letter and the heading share
-   one line (both inline, so they baseline-align for free), the two lines of
-   copy sit tight underneath, and 24px separates one unit from the next. */
-.inline-list{ padding:0; list-style:none; }
-/* Card = the canvas colour, defined only by its hairline. No fill, no shadow —
-   the same rule every other surface on the page follows. */
-.inline-list > li{
-  background:var(--canvas);
-  border:1px solid var(--border);
-  border-radius:var(--radius-card);
-  padding:20px;
-}
-.inline-list > li + li{ margin-top:14px; }
-.il-head{ display:flex; align-items:center; gap:12px; margin-bottom:12px; }
-.il-icon{
-  flex:0 0 34px; width:34px; height:34px;
+/* The bottom half has to track the section token, not a literal: the hero pays
+   one half of the gap to Case Studies and that section's padding pays the other.
+   The top is a fixed 48 because nothing sits above it to share with. */
+.hero{ padding-block:var(--space-48) calc(var(--gap-page-section) / 2); }
+/* The whole hero sits on a raised panel rather than bare canvas. Same card
+   idiom the rest of the page uses — fill, hairline, 16px radius, no shadow —
+   only at section scale. --surface-raised, not --surface-art: art panels frame
+   images, this frames the page's opening statement. */
+.hero-box,
+.about-box{
   background:var(--surface-raised);
   border:1px solid var(--border);
-  border-radius:var(--radius-input);
-  display:inline-flex; align-items:center; justify-content:center;
-  color:var(--ink-2);   /* icons inherit this via currentColor — monochrome, never lime */
-}
-.il-icon svg{ width:18px; height:18px; display:block; }
-.inline-list .il-title{
-  font-size:var(--text-subheading); font-weight:var(--fw-medium);
-  color:var(--ink); line-height:1.3;
-}
-/* The two description lines per card — a real <ul>, so it announces as a
-   list rather than two loose sentences. Grid gives the hanging indent for
-   free: the marker is column 1, the text becomes an anonymous item in
-   column 2, so a wrapped line starts under the TEXT and never under the
-   bullet. (text-indent tricks and list-style-position:inside both fail that.) */
-.il-points{ list-style:none; margin:0; padding:0; }
-.il-points > li{
-  display:grid; grid-template-columns:auto 1fr; column-gap:9px;
-  font-size:var(--text-nested); line-height:1.6; color:var(--ink-2);
-}
-.il-points > li + li{ margin-top:4px; }
-/* --ink-3 against the text's --ink-2: a faint guide, not a mark. */
-.il-points > li::before{ content:"\2022"; color:var(--ink-3); }
-
-/* ---------- pull quote — the diagnosis line that breathes ---------- */
-.pull{
-  padding-left:var(--space-32);
-  border-left:2px solid var(--accent-mark);
-  font-size:var(--text-pull); line-height:1.4;
-  color:var(--ink); letter-spacing:var(--tracking);
-}
-
-/* ---------- direction box — the paired design-principle statements ----------
-   A distinct component from .pull, not a variant of it. The ONLY unbordered
-   surface on the page: it is defined purely by the recessed fill sitting a
-   step below the canvas, so it reads as a depression rather than an object.
-   Type runs against the usual grain — the message is the LARGE element and
-   the label is the small bright one, so the eye lands on the label and then
-   falls into the statement.
-   Content is --ink-2, never --ink-body: in light mode --ink-body IS --ink,
-   which would collapse label and message onto the same colour. */
-.dirbox{
-  background:var(--surface-sunken);
   border-radius:var(--radius-card);
-  padding:var(--space-24);
+  padding:var(--space-64) var(--space-48);
 }
-/* Icon sits ABOVE the label, not inline: at 26px it is larger than the 16px
-   label, and set beside it the glyph would out-weigh the words. Stacked, it
-   reads as a marker over its caption. currentColor ties it to the label, so
-   it inverts with the mode for free. */
-.dirbox .dir-icon{
-  display:block; width:26px; height:26px; margin:0 0 10px;
+/* ---------- the hero reads as a folder ----------
+   The tab and the panel are two boxes drawn to look like one shape.
+   Three things do the joining:
+     - the tab carries no bottom border, so nothing closes it off underneath;
+     - margin-bottom:-1px pulls it down onto the panel's top border, and
+       z-index:1 paints the tab's fill over that 1px so the line does not show
+       through the tab's width;
+     - the panel gives up its top-LEFT radius only, so the tab's left edge and
+       the panel's left edge form one continuous vertical line. Every other
+       corner keeps --radius-card.
+   aria-hidden: it is a shape with a word in it, not information. The page
+   already says whose portfolio this is, twice. */
+.folder-tab{
+  width:fit-content;
+  display:flex; align-items:center; gap:8px;
+  /* 6 on the right, not 20. The padding is not the whole story on that side:
+     the wedge adds its own horizontal run, and at the text's cap height the
+     diagonal already sits ~16px clear of the tab's nominal edge. 6 + 16 lands
+     on the 22 the left side uses, so the label reads centred inside the shape
+     rather than pushed against the dot. */
+  padding:10px 6px 10px 22px;
+  background:var(--surface-raised);
+  border:1px solid var(--border);
+  /* No bottom border, and no right border either — the right side is drawn by
+     the skewed wedge below so it can run at an angle. Only the top-left corner
+     keeps a radius: a top-right radius would curve the top border downward
+     right where the wedge needs to take over from it. */
+  border-bottom:0; border-right:0;
+  border-radius:var(--radius-card) 0 0 0;
+  font-family:var(--font-sans); font-size:var(--text-body-sm);
+  font-weight:var(--fw-medium); letter-spacing:var(--tracking);
+  color:var(--ink-2);
+  position:relative; z-index:1;
+  margin-bottom:-1px;
 }
-.dirbox .dir-label{
-  margin:0 0 14px;
-  font-size:var(--text-nested); line-height:1.4;
-  font-weight:var(--fw-medium); color:var(--ink);
-  letter-spacing:var(--tracking);
+/* The angled right edge. A skewed box, not a clip-path: clipping would cut the
+   1px border away along the diagonal and the shape would lose its outline
+   exactly where it needs one — and the tab's fill is the same colour as the
+   panel, so the outline is the only thing that makes it a tab at all.
+   skewX with the origin at the bottom-left leaves the bottom edge where it is
+   and slides the top edge left, which is the direction a folder tab runs: wider
+   at the base. The wedge's own left edge slants too, but it sits inside the tab
+   over an identical fill and carries no border, so it never shows.
+   top:-1px lines its top border up with the tab's; bottom:0 lands it on the
+   same 1px overlap of the panel that the tab uses. */
+.folder-tab::after{
+  content:"";
+  position:absolute;
+  /* right:-26 rather than -16, and it is the radius that sets the number. The
+     skew slides the top edge 15.3px left (42px tall x tan 20deg), so the
+     wedge's top-right corner lands at right-offset minus 15.3. The 10px arc
+     starts 10px before that corner, and if the arc starts to the LEFT of the
+     tab's own right edge then the tab's straight top border runs on above it
+     and shows as a step. 26 - 15.3 - 10 puts the arc's start just past the tab
+     edge instead, so the two borders meet as one line. */
+  top:-1px; bottom:0; right:-26px; width:40px;
+  /* Behind the tab's own fill. A pseudo-element paints after the element's
+     text, so at its default depth the wedge's background covered the last
+     letters of the label. The tab sets z-index:1 and so opens a stacking
+     context — a negative index here drops the wedge below the tab's background
+     but stays inside that context, which keeps it above the panel.
+     -2, one step below the flare: a pseudo-element pair paints ::before then
+     ::after, so at equal depth the wedge's straight stroke drew over the flare's
+     arc and the two forked at the join. Dropping the wedge lets the flare's
+     fill cover the last few pixels of that stroke, which is exactly the stretch
+     the arc replaces. */
+  z-index:-2;
+  background:var(--surface-raised);
+  border-top:1px solid var(--border);
+  border-right:1px solid var(--border);
+  border-left:0; border-bottom:0;
+  /* Rounds the point where the slant meets the top edge. The radius is applied
+     before the skew, so the shear turns the circular arc into a slightly
+     leaning ellipse — invisible at 6px, and the alternative (an SVG path) would
+     cost a second colour source for a corner this size. */
+  border-top-right-radius:10px;
+  transform:skewX(20deg);
+  transform-origin:bottom left;
 }
-/* a second message paragraph is part of the same statement — bound tighter
-   than prose spacing so the box still reads as one block */
-.dirbox .dir-msg + .dir-msg{ margin-top:12px; }
-.dirbox .dir-msg{
-  margin:0;
-  font-size:var(--text-subhead); line-height:1.5;
-  font-weight:var(--fw-regular); color:var(--ink-2);
+/* The flare at the foot of the slant — the corner curves OUT into the panel,
+   not in. border-radius cannot express that: it only ever cuts a corner away,
+   and what is needed here is area added back on the outside of the angle.
+   So the arc is painted instead. The element is an R x R square whose top-right
+   corner is the centre of a circle of radius R; everything inside that circle
+   is OUTSIDE the tab and is left transparent, everything outside it — the
+   sliver in the bottom-left — is panel fill, and a 1px ring straddling the
+   boundary is the stroke.
+   Transparent, not var(--canvas). Painting the page colour there was harmless
+   while the hero sat on the page's own background, but the section now has a
+   black ground with a video over it, and a 14px patch of canvas showed up as a
+   pale square hanging off the tab. Nothing outside the shape should be painted
+   at all — then whatever the section happens to be shows through.
+   Placement makes the arc tangent to both edges it joins. Tangent to the
+   panel's top edge puts the centre exactly R above it. Tangent to the 20-degree
+   slant then fixes the horizontal: solving (cx-x0)cos20 + R sin20 = R gives
+   cx = x0 + 0.700R, so at R=14 the centre sits 9.8px right of where the slant
+   lands, hence right:-36px against the slant's own -26px.
+   The square's bottom row overlaps the panel's top border, but every point in
+   that row is at least R from the centre — so it paints as fill and stroke, not
+   as canvas, and the panel's border is continued rather than erased. */
+.folder-tab::before{
+  content:"";
+  position:absolute;
+  bottom:0; right:-35.803px;
+  /* The box is trimmed to exactly the span of the arc that belongs to the
+     shape, and no further. It used to be a 14x14 square with the circle centred
+     on its top-right corner, which drew the arc from the box's top edge down —
+     but the arc only becomes the boundary at the point where it is tangent to
+     the slant, 9.21px above the foot. Above that it peels away from the slant
+     by up to 0.8px and was painting a second hairline alongside it.
+     Cutting the box at the tangency point removes that stretch. The circle is
+     unchanged; it simply now has its centre 4.788px ABOVE the box, which is
+     what `at 100% -4.788px` says. Every figure here is R and the 20deg slant:
+       centre offset from the foot  = R(1-sin20)/cos20 = 9.803
+       tangency, x                  = that - R cos20   = -3.353
+       tangency, y above the foot   = R(1-sin20)       = 9.212 */
+  width:13.156px; height:9.212px;
+  z-index:-1;
+  background:radial-gradient(circle 14px at 100% -4.788px,
+    transparent 0 13.5px,
+    var(--border) 13.5px 14.5px,
+    var(--surface-raised) 14.5px);
 }
 
-/* ---------- figures in the flow ---------- */
-.fig-media{
-  background:var(--surface-art); border:1px solid var(--border);
-  border-radius:var(--radius-card); padding:var(--space-32);
-  color:var(--stroke-art);
+/* The lime pip. --accent is the lime as-is for dark; light steps down to
+   --accent-hover, which is the same hue a little deeper — on a near-white panel
+   the raw lime reads as a pale smudge. */
+.folder-dot{
+  flex:none; width:8px; height:8px; border-radius:50%;
+  background:var(--accent);
 }
-.fig-media svg{ display:block; width:100%; height:auto; }
-.fig-media.plain{ background:var(--surface); }
-figcaption{
-  font-size:var(--text-body-sm); line-height:1.55; color:var(--ink-3);
-  margin-top:var(--space-16); max-width:var(--measure);
-  /* a caption may carry an unbreakable token (a long marker, a URL). Without
-     this it overflows its column and drags horizontal scroll onto the page. */
-  overflow-wrap:break-word;
-}
-/* The label ran in mono at 0.100em tracking. Everywhere else that treatment sits
-   on a 12px uppercase eyebrow, where wide tracking is doing structural work; here
-   it landed on a 14px sentence-case word inside running prose, which read as
-   decoration rather than as a label. It now inherits figcaption's own sans face
-   and tracking, and separates from the caption text by weight and one step of ink. */
-figcaption .cap-n{
-  font-weight:var(--fw-medium); color:var(--ink-2); margin-right:8px;
-}
-.slot{
-  display:flex; flex-direction:column; align-items:center;
-  justify-content:center; gap:var(--space-24);
-}
-/* Aspect-locked placeholder frame — reserves realistic space at a wide-image
-   ratio. Frame, hairline, radius and centring come from .fig-media + .slot.
-   .box-slot sits inside a decision box, where .dbox .fig-media already returns
-   the panel to the canvas colour (--surface-art lands 1.03:1 on the box tint
-   in light — invisible). */
-.box-slot{ aspect-ratio:16 / 9; overflow:hidden; }
-.box-slot svg{ min-height:0; max-height:100%; }
+[data-theme="light"] .folder-dot{ background:var(--accent-hover); }
+.hero-box{ border-top-left-radius:0; }
 
-/* ---------- theme-paired bitmaps ----------
-   Some figures ship as two exports, one drawn for each canvas: strokes that
-   read on white are invisible on obsidian and vice versa, so a single file
-   cannot serve both. Both sit in the DOM; only the active mode's is shown. */
-.shot-img{ display:block; width:100%; height:auto; }
-[data-theme="light"] .shot-img-dark{ display:none; }
-[data-theme="dark"]  .shot-img-light{ display:none; }
-
-/* The hero keeps the art-panel ground like every other figure slot, but drops
-   padding so the dashboard bleeds to the frame edge as the export intends. */
-.hero-shot{ padding:0; overflow:hidden; }
-
-/* Bitmap figures other than the hero: the default 32px mat shrank the artwork
-   to ~89% of its frame. A slim, even pad keeps the hairline off the image
-   without spending a tenth of the width on empty margin. */
-.shot-frame{ padding:16px; }
-
-.slot .slot-label{
-  font-family:var(--font-mono); font-size:var(--text-caption);
-  letter-spacing:var(--tracking-mono); color:var(--ink-3); text-align:center;
+/* The heading sits inside the panel now, so the .section rule that would put
+   --gap-sec-after between the section's own children no longer reaches it. */
+.about-box > * + *{ margin-top:var(--gap-sec-after); }
+.about-box > .sec + *{ margin-top:var(--gap-sec-after); }
+.about-box > * + .timeline{ margin-top:var(--gap-block); }
+/* 240px, not 220: "Head of Product · Platform Architect" measures 226.2px at
+   14px Manrope, so a 220px column broke it after "Platform" and stranded
+   "Architect" on a line of its own. 240 holds it on one line with room to spare
+   and still leaves the statement 604 of the 892. */
+.hero-grid{
+  display:grid; grid-template-columns:240px 1fr;
+  gap:var(--space-48); align-items:center;
 }
-/* the transition arrow inside before/after figures */
-.fig-arrow{ color:var(--accent-mark); }
 
-/* before/after pairing inside one figure — these SVGs carry intrinsic
-   sizes and must NOT be stretched by the generic full-width rule */
-.ba{
-  display:flex; align-items:center; justify-content:center;
-  gap:var(--space-32); flex-wrap:wrap;
+/* left column — identity rail */
+.id-photo{
+  display:block; width:100%; max-width:140px;
+  aspect-ratio:1 / 1; object-fit:cover;
+  /* Circle, and no hairline: the portrait is a cut-out, so a ring would trace
+     empty background rather than the subject. */
+  border-radius:50%; border:0;
+  /* The fill is what MAKES the circle. This PNG carries alpha, so clipping a
+     transparent image to 50% shows no disc at all — only a subject with its
+     shoulders sliced by an invisible arc. --canvas, not --surface-art: against
+     the panel's --surface-raised it reads as a lighter disc in light mode and a
+     darker one in dark, where surface-art would land within a few levels of the
+     panel and vanish. */
+  background:var(--canvas);
+  /* 16, not 24: the rail is a compact block of three parts now, not a column
+     with a contact list under it. */
+  margin-bottom:var(--space-16);
 }
-.fig-media .ba svg{ width:auto; max-width:100%; height:auto; flex:0 1 auto; }
-.ba .ba-arrow{ font-size:20px; color:var(--accent-mark); line-height:1; }
+.id-name{
+  font-size:var(--text-subhead); line-height:1.3;
+  font-weight:var(--fw-medium); color:var(--ink); margin:0;
+}
+/* The alias rides inside the same line box, so it has to drop back to regular
+   weight and --ink-3 on its own — it inherits the name's medium otherwise. */
+.id-alias{
+  font-size:var(--text-body-sm); font-weight:var(--fw-regular);
+  color:var(--ink-3);
+  /* The 220px column is too narrow for name and alias on one line, so the alias
+     wraps. Without this it breaks inside the parenthetical — "(Nemo" above
+     "Dao)". nowrap moves the whole bracket to the second line instead. */
+  white-space:nowrap;
+}
+/* Two roles on one line, separated by a middot. Written as plain text rather
+   than two flex items so that when the 246px mobile column forces a wrap, the
+   break falls at a space like any sentence — a flex separator would strand the
+   dot at the head of the second line. */
+.id-role{
+  font-size:var(--text-body-sm); line-height:1.5;
+  color:var(--ink-2); margin:6px 0 0;
+}
+/* right column — the statement.
+   No max-width on either: the 544px column is already narrower than the 680px
+   reading measure, so a cap would never bind and would only mislead the next
+   person who reads this rule. */
+h1.title{
+  /* Was clamp(30, 5.4vw, 44). Stepped down a full rung to --text-heading so the
+     opening reads as a statement inside a panel, not a masthead. */
+  font-size:clamp(26px, 4.2vw, var(--text-heading));
+  line-height:1.14; margin:0 0 var(--space-16);
+}
+.deck{
+  /* --text-prose, down from --text-lede: the lede size belongs to a full-width
+     article opening, and this now runs inside a 624px panel column. */
+  font-size:var(--text-prose); line-height:1.5;
+  color:var(--ink-2); margin:0;
+}
+
+/* ---------- ecosystem band ----------
+   A full-bleed dark section in BOTH modes. The section carries data-theme="dark"
+   in the markup, which re-declares the whole dark palette for its subtree — the
+   same mechanism the page toggle uses, so the ink levels here are not a second
+   source of truth.
+   The one value it overrides is --canvas, set to the webm's own background.
+   Both files were sampled to a canvas and every edge pixel of both came back
+   #000000 exactly — 6 of 6 corners, alpha 255 — so the video no longer sits on
+   a slab a few levels lighter than itself; there is no seam left to see.
+   Overriding the token rather than setting background directly means anything
+   nested that reads --canvas follows the band instead of the page.
+   No hairlines: they existed because in dark mode the band and the page were
+   both #242424 and the boundary vanished. At #000 against #242424 — or against
+   #FBFBFA — the fill separates the section on its own. */
+.band{
+  --canvas:#000000;
+  background:var(--canvas); color:var(--ink-body);
+}
+/* Pure black is right against the light page — it reads as a deliberate slab.
+   Against the dark page it is wrong: #000 next to #242424 is a step outside the
+   palette's tone, colder and flatter than every other surface on the screen.
+   --surface-sunken is the scale's own answer to "darker than canvas": #1C1C1C,
+   8 levels below it, mixed from the same base as --surface-art and --surface-2.
+   The band already carries data-theme="dark" so it always reads the dark ramp;
+   what this selector keys off is the PAGE's mode, via the root above it. */
+[data-theme="dark"] .band{ --canvas:var(--surface-sunken); }
+/* The band pays less at the bottom than the uniform 40 every other section
+   uses, because it is not the only thing holding the edge open: the webm keeps
+   ~63px of its own empty ground below the lowest drawn element even after the
+   crop. Measured, the gap under the artwork was 103px against 55px above it.
+   Trimming the padding rather than cropping harder is the cheaper fix — the
+   crop is already as tight as the animation's lowest frame allows. */
+.band .section{ padding-bottom:var(--space-16); }
+/* The webm's own ground is #000000, so on a #1C1C1C band it would show as a
+   darker rectangle and put back exactly the seam the black was meant to remove.
+   screen blending solves it without touching the file: the formula is
+   1-(1-backdrop)(1-source), so a black source returns the backdrop unchanged and
+   the video's ground becomes the band, whatever the band is.
+   It is applied in both modes on purpose — with a black backdrop the same
+   formula collapses to the source itself, so light mode is left untouched. */
+.band .eco{ mix-blend-mode:screen; }
+.band .eco{
+  display:block; width:100%; height:auto;
+  /* No radius: rounding mattered while the video read as a card on a lighter
+     ground. Now the frame and the ground are the same black, so a corner cut
+     would only remove the artwork's own pixels for nothing. */
+  /* 32, not --gap-figure's 56. The figure register still applies, but the webm
+     now carries ~23px of its own empty ground above the first drawn pixel (see
+     the crop below), so 32 + 23 lands back on the 55-ish the token intends.
+     Spending the full 56 on top of that read as 79px and was most of why the
+     section felt slack. */
+  margin-top:var(--space-32);
+}
+/* Cropped, not letterboxed. The source is 4794x2250 and renders 892x419 here,
+   but the artwork never reaches the frame: sampled across eight frames of the
+   loop, every drawn pixel falls between y=100 and y=356, leaving 100px of dead
+   ground above and 62px below — 39% of the box, permanently empty. That is what
+   made the section read slack, not the gaps around it.
+   2.75/1 trims the box to 324px, removing 95px. object-position 80% splits that
+   76 off the top and 19 off the bottom, so the window shows source rows
+   407..2150 of 2250. The drawn area across the loop measured 500..2050, which
+   leaves ~17px of screen air above it and ~19px below — the crop is deliberately
+   short of the dead ground it could take, because the animation draws downward
+   over its 8s and the last frames reach lowest.
+   Scoped to .eco-wide: .eco-tall is a different composition, and sampling found
+   no consistent dead ground in it, so it is left at its natural framing. */
+.band .eco-wide{
+  aspect-ratio:2.75 / 1;
+  object-fit:cover; object-position:50% 80%;
+}
+/* One source per viewport, swapped at the same 720px breakpoint as the type
+   ladder. Both carry preload="none" so the one that is never shown is never
+   fetched either.
+   Scoped under .band deliberately: a bare .eco-tall{display:none} loses to
+   .band .eco{display:block} on specificity, not order, and BOTH videos render. */
+.band .eco-tall{ display:none; }
+/* Same treatment as .eco-wide, measured separately because it is a different
+   composition. At 358 wide the portrait source renders 522px tall, and the map
+   occupies only the middle of it: 107px of dead ground above the first node and
+   79px below the last — 36% of the box.
+   0.93/1 trims it to 385px, removing 137. object-position 59% takes 81 off the
+   top and 56 off the bottom, leaving ~26px of air above the artwork and ~23px
+   below. The rule lives here, outside the media query, so it applies wherever
+   .eco-tall is the visible source. */
+.band .eco-tall{
+  aspect-ratio:0.93 / 1;
+  object-fit:cover; object-position:50% 59%;
+}
 
 /* ============================================================
-   DECISION BOXES — the three workstreams of section 03
-   The single deliberate deviation from the canvas-card rule: a tinted
-   fill so each workstream reads as one self-contained block. Everything
-   else holds — 1px hairline, 16px radius, no shadow.
-   Each box carries its own internal rhythm, because .article's pair rules
-   only reach direct children and these are now grandchildren.
+   WORK GRID
+   The case study bans grids of cards outright ("Nothing else spans.
+   No grids of cards anywhere."). This page is the sanctioned
+   exception, and the ONLY one: fifteen peers with no ranking
+   between them is a set, and a set reads as a grid.
+   auto-fit rather than fixed columns, so the shelf reflows on its
+   own between 940 and 320 without inventing breakpoints the type
+   ladder does not have.
    ============================================================ */
-.dbox{
-  background:var(--surface-2);
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
+  gap:var(--space-24);
+  list-style:none; margin:0; padding:0;
+}
+
+/* ---------- "Other work": a scrolling strip, not a grid ----------
+   Ten modules stacked in a wrapping grid claimed as much vertical room as the
+   four case studies above them, which inverted the page's own hierarchy. As a
+   horizontal strip each group occupies one row whatever it holds, and the
+   section reads as the supporting layer it is.
+   overflow-x on a container is not keyboard-operable by default and there are
+   no focusable children inside these cards, so each <ul> carries tabindex="0"
+   and an aria-label — that is what makes the region reachable and scrollable
+   without a mouse (WCAG 2.1.1).
+   No scroll-snap at all, not even `proximity`. Snapping means the strip cannot
+   come to rest where the user let go — it hunts for the nearest anchor, and
+   when the nearest one is where the scroll began it undoes the gesture
+   entirely. Free scrolling stops exactly where the hand stopped. */
+.strip{
+  display:flex; gap:var(--space-16);
+  overflow-x:auto; overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+  list-style:none; margin:0; padding:0;
+
+  /* Stops a sideways flick from escaping the strip and becoming the browser's
+     back/forward gesture once the strip hits its end. `contain` keeps the
+     overscroll inside this element without disabling the scroll itself. */
+  overscroll-behavior-x:contain;
+
+  /* No scrollbar. The fade below is the affordance instead. */
+  scrollbar-width:none; -ms-overflow-style:none;
+
+  /* Drag-to-scroll is wired up in script; the cursor advertises it. */
+  cursor:grab;
+
+  /* The edge fade. A mask, not an overlay: mask coordinates are relative to the
+     element's border box, so the fade stays pinned to the edges while the cards
+     scroll underneath. An absolutely-positioned overlay would be a child of the
+     scroll container and would slide away with the content.
+     Both widths default to 0, which makes the gradient fully opaque, and script
+     raises only the side that actually has something hidden behind it. */
+  --fade-l:0px;
+  --fade-r:0px;
+  -webkit-mask-image:linear-gradient(to right,
+    transparent 0, #000 var(--fade-l),
+    #000 calc(100% - var(--fade-r)), transparent 100%);
+          mask-image:linear-gradient(to right,
+    transparent 0, #000 var(--fade-l),
+    #000 calc(100% - var(--fade-r)), transparent 100%);
+}
+.strip::-webkit-scrollbar{ display:none; }
+.strip.fade-l{ --fade-l:44px; }
+.strip.fade-r{ --fade-r:44px; }
+/* While a drag is in flight, a stray text selection dragged across the cards
+   looks broken. The cursor flips to match. */
+.strip.dragging{
+  cursor:grabbing;
+  user-select:none; -webkit-user-select:none;
+}
+/* The native image-drag ghost hijacks a mouse drag before it can scroll.
+   pointer-events:none also means every press lands on the card, so the drag
+   starts the same wherever inside the strip it begins — these cards hold
+   nothing clickable, so nothing is lost. */
+.strip img{
+  -webkit-user-drag:none;
+  pointer-events:none;
+}
+.strip:focus-visible{
+  outline:2px solid var(--focus); outline-offset:4px;
+  border-radius:var(--radius-card);
+}
+/* A fixed basis rather than a fraction: cards must NOT divide the container, or
+   nothing overflows and there is nothing to scroll. 320 also leaves the third
+   card half-visible at 892, which is the affordance that says "there is more".
+   padding:0 and gap:0 on the card: the picture runs to the card's own edges
+   now, so the inset moves onto the text alone. overflow:hidden is what makes
+   the card's 16px radius cut the picture's corners instead of letting them
+   square off through it. */
+.strip .card{
+  flex:0 0 320px;
+  flex-direction:row; align-items:stretch; gap:0;
+  padding:0; overflow:hidden;
+}
+/* A bleed, not a frame. It touches the card's left, top and bottom edges — no
+   padding, no border, no radius of its own, and align-self:stretch is what
+   carries it the full height. 96px, up from 72: without the card's 16px inset
+   beside it the band needs a little more width to read as a band.
+   The art ground stays as the fallback behind a missing file. */
+.strip .card-media{
+  flex:none; align-self:stretch;
+  width:96px; padding:0; margin:0; border:0; border-radius:0;
+  /* No ground of its own. Every source carries an alpha channel, so where the
+     artwork is transparent the card's own fill now shows through and the
+     picture sits ON the card rather than on a panel inset into it.
+     --surface-art was doing real work while the media was a framed tile; as a
+     bleed it only drew a second surface a few levels off the card's. */
+  background:transparent;
+  overflow:hidden;
+}
+/* cover, not contain: the band is taller than it is wide, and contain would
+   draw the square source at 96x96 and leave the rest of the column empty — the
+   shape would change but nothing would be gained. The sources are centre-
+   weighted, so a centred crop keeps the subject. */
+.strip .card-media img{
+  width:100%; height:100%;
+  aspect-ratio:auto;
+  object-fit:cover; object-position:center;
+}
+/* The inset the card gave up. min-width:0 lets the column shrink inside the
+   flex row; without it a long unbroken word would push the card past its
+   320px basis. */
+.strip .card-text{ min-width:0; padding:var(--space-16); }
+.strip .card h4{ font-size:var(--text-body-sm); line-height:1.35; }
+.strip .card p{ font-size:var(--text-caption); line-height:1.5; margin:6px 0 0; }
+/* Same rule as every card in the case study: canvas colour, one hairline,
+   16px radius. No shadow, no tint. */
+.card{
+  background:var(--canvas);
   border:1px solid var(--border);
   border-radius:var(--radius-card);
-  padding:var(--space-32);
+  padding:var(--space-24);
+  display:flex; flex-direction:column;
 }
-.dbox > *{ margin-top:0; margin-bottom:0; }
-.dbox > * + *{ margin-top:var(--gap-para); }
-.dbox > :where(.dbox-title, h3.sub) + *{ margin-top:var(--gap-subhead-after); }
-/* the lead-in ends on a colon — it introduces the list, so it binds to it */
-.dbox > * + :where(.mod-list){ margin-top:var(--gap-subhead-after); }
-.dbox > * + :where(.pull, .deep-open){ margin-top:var(--gap-block); }
-.dbox > :where(.pull) + *{ margin-top:var(--gap-block); }
-.dbox > * + :where(figure){ margin-top:var(--gap-figure); }
-.dbox > :where(figure) + *{ margin-top:var(--gap-figure); }
-/* Figures inside a box fit the box. No left-break, no right-break — the
-   article's .wide rule targets direct children only, so nothing here spans. */
-.dbox figure{ width:auto; margin-inline:0; }
-/* On the canvas, the art panel is one step DOWN from its ground (240 on 251
-   light, 13 on 18 dark). Inside a tinted box the light pair would land 3 units
-   apart — flat. Returning the panel to the canvas colour restores the same
-   one-step read in both modes, now inset upward in light and downward in dark.
-   Tonal only: no diagram geometry, stroke or label changes. */
-.dbox .fig-media{ background:var(--canvas); }
-/* …but a dialog's own ground IS the canvas, so inside a modal that override
-   makes the frame vanish into the panel. --surface-sunken instead: it steps
-   the same subtle amount in BOTH modes (1.098:1 dark / 1.092:1 light),
-   whereas --surface-art reads 1.10 in light but a barely-there 1.04 in dark.
-   Declared after the rule above — equal specificity, so order decides. */
-.modal .fig-media{ background:var(--surface-sunken); }
-/* The before/after pair needs 604px to sit side by side; a box gives it 550.
-   Left as a wrapping row the arrow strands beside the "before" state and the
-   transition stops reading. Stacking is what the mobile rule already does —
-   same treatment, one width earlier. */
-.dbox .ba{ flex-direction:column; gap:var(--space-16); }
-.dbox .ba .ba-arrow{ transform:rotate(90deg); }
-
-/* ---------- workstream groups — a scannable definition list ----------
-   Two columns on desktop so the six group names stack into one vertical
-   edge the eye can run down; one column on mobile, where a 170px name
-   column would leave the modules too narrow to read. Hairlines separate
-   the rows — no bullets, no cards: a card per group inside an already
-   tinted box would be a box in a box. */
-/* No margin reset here: .dbox > * already zeroes it, and re-declaring it at
-   equal specificity LATER in the file would silently beat the pair rule that
-   sets the gap under the lead-in. */
-.mod-list{ list-style:none; padding:0; }
-.mod-list > li{
-  /* 184px, not 170: the widest name ("Scheme Management") sets 161px, and a
-     9px margin would wrap it during the webfont swap. 23px absorbs that. */
-  display:grid; grid-template-columns:184px 1fr; gap:var(--space-24);
-  align-items:start;
-  padding:14px 0; border-top:1px solid var(--border);
+/* Card art panel — the case study's figure treatment, unchanged: the art
+   ground, one hairline, the 16px card radius.
+   Padding is .shot-frame's 16px, not .fig-media's 32px: 32px inside a ~280px
+   card would leave almost nothing for the artwork itself.
+   A fixed ratio with object-fit:contain is what makes thirteen sources with
+   three different backgrounds (white, dark, grey) read as one set — contain,
+   not cover, because these are illustrations and cropping loses the subject. */
+.card-media{
+  background:var(--surface-art);
+  border:1px solid var(--border);
+  border-radius:var(--radius-card);
+  padding:16px;
+  margin-bottom:var(--space-16);
 }
-.mod-list > li:first-child{ border-top:0; padding-top:0; }
-.mod-list > li:last-child{ padding-bottom:0; }
-.mod-name{
-  font-size:var(--text-nested); line-height:1.5;
+.card-media img{
+  display:block; width:100%;
+  /* 1:1, not 16:9. Every source is 774x780 — square. In a 16:9 frame the
+     artwork rendered 110px wide inside a 197px box, so 45% of the panel was
+     empty and the illustration read small. A square frame is the source's own
+     ratio: it fills the panel while object-fit:contain still guarantees
+     nothing is ever cropped. Only the work-grid cards use this; the case
+     study's figures keep their own ratios. */
+  aspect-ratio:1 / 1;
+  object-fit:contain; object-position:center;
+}
+.card h4{
+  font-size:var(--text-nested); line-height:1.4;
   font-weight:var(--fw-medium); color:var(--ink);
 }
-.mod-items{ font-size:var(--text-nested); line-height:1.6; color:var(--ink-2); }
+.card p{
+  font-size:var(--text-body-sm); line-height:1.55;
+  color:var(--ink-2); margin:8px 0 0;
+}
+/* The four featured case studies. A 380px floor gives two per row, against the
+   260px floor that gives the module grid three or four. Declared before the
+   mobile block, so the `.grid{grid-template-columns:1fr}` rule there still wins
+   the tie on order and these stack on a phone like every other grid. */
+.grid-feature{ grid-template-columns:repeat(auto-fit, minmax(380px, 1fr)); }
 
-/* ---------- deep-dive trigger — solid neutral action button ----------
-   Filled with --ink and lettered in --canvas: the strongest affordance the
-   system has that is NOT the accent. Lime stays rationed to the one closing
-   burst; this button earns its weight from the neutral ramp instead.
-   Sentence case, sans, 500 — uppercase mono read as a label, not a control.
-   The pill is sized by its own short text, so it never becomes a wide bar. */
-.deep-open{
-  display:inline-flex; align-items:center; gap:10px;
+/* ---------- featured card: 60 / 40, both columns full height ----------
+   Two columns, nothing wrapping around anything: text and button in the left
+   60%, the picture in the right 40%, and both run the full height of the card.
+   A flex row, not the float the draft used. The float was right while the
+   picture was an inset the copy had to flow past; now that the picture is a
+   full-height column there is nothing to flow past, and a float would leave the
+   button free to drift up beside it whenever the copy ran short.
+   The markup puts .card-body first so the DOM order matches what is shown — no
+   `order` juggling, and a screen reader gets heading, copy, link, then the
+   illustration's description.
+   No min-height either: the row's own height sets it, and grid items stretch,
+   so the two cards in a row match and their buttons line up. */
+.grid-feature .card{
+  display:flex; flex-direction:row; align-items:stretch;
+  background:var(--surface-raised);
+  padding:0; overflow:hidden;
+}
+/* flex:0 0 60% — a fixed basis, not flex-grow, so the split holds whatever the
+   copy does. min-width:0 lets a long word shrink rather than push the column
+   past its share. */
+.grid-feature .card-body{
+  flex:0 0 60%; min-width:0;
+  display:flex; flex-direction:column;
+  padding:var(--space-24);
+}
+.grid-feature .card-media{
+  flex:0 0 40%;
+  background:transparent; border:0; border-radius:0; padding:0; margin:0;
+}
+/* height:100% against a stretched flex item is what fills the column top to
+   bottom; cover then crops rather than letterboxes, anchored to the top so the
+   subject survives. */
+.grid-feature .card-media img{
+  width:100%; height:100%;
+  aspect-ratio:auto;
+  object-fit:cover; object-position:top center;
+}
+/* Modelled on the case study's .deep-open, not on .btn. .btn is the lime CTA and
+   there is already one of those at the foot of the page; four more competing
+   with it would flatten the page's only real call to action. .deep-open is the
+   neutral register — var(--ink) on var(--canvas), so the pill is near-black with
+   light text in light mode and inverts cleanly in dark.
+   margin-top:auto pins it to the card floor so buttons line up across a row of
+   unequal descriptions.
+   The inset is .btn's 8px/16px, not .deep-open's 12px/22px: deep-open is a
+   full-width statement inside a decision box with room to spare, while this one
+   shares a 434px card with an image and four lines of copy. Only the colour
+   register is borrowed. */
+.card-btn{
+  /* The body is a flex column again, so this pins the button to the bottom of
+     its column. Cards in a row are the same height, so the buttons line up. */
+  margin-top:auto; align-self:flex-start;
+  display:inline-flex; align-items:center; gap:8px;
   background:var(--ink); color:var(--canvas);
   border:0; border-radius:var(--radius-pill);
-  padding:12px 22px; cursor:pointer; text-align:left;
+  padding:8px 16px; cursor:pointer; text-align:left; text-decoration:none;
   font-family:var(--font-sans); font-size:var(--text-body-sm);
   font-weight:var(--fw-medium); letter-spacing:var(--tracking);
   line-height:1.3;
   transition:opacity .15s ease;
 }
-.deep-open:hover{ opacity:.88; }
-.deep-open .arw{ transition:transform .15s ease; }
-.deep-open:hover .arw{ transform:translateX(3px); }
+.card-btn:hover{ opacity:.88; }
+/* The gap from the copy lives on the paragraph, not as padding-top on the
+   button: padding-top would override the pill's own top inset and leave it
+   lopsided. margin-top:auto still absorbs any extra height on top of this.
+   16, down from 32: the button is a quiet continuation of the card, not a
+   separate block that needs a full --space-32 break above it. */
+.grid-feature .card-body p{ margin-bottom:var(--space-16); }
+.card-btn .arw{ transition:transform .15s ease; }
+.card-btn:hover .arw{ transform:translateX(3px); }
 @media (prefers-reduced-motion:reduce){
-  .deep-open .arw{ transition:none; }
-  .deep-open:hover .arw{ transform:none; }
+  .card-btn .arw{ transition:none; }
+  .card-btn:hover .arw{ transform:none; }
 }
 
-/* ---------- deep-dive modal ----------
-   The one place --shadow-modal is allowed: a floating layer genuinely
-   detached from the page needs the depth cue that flat surfaces don't. */
-.modal[hidden]{ display:none; }
-/* The dialog is a child of its box, so the box's rhythm rule reaches it. A
-   margin on a fixed element is NOT inert — it offsets the resolved inset,
-   which left a 28px unscrimmed band across the top of the viewport. */
-.dbox > .modal{ margin:0; }
-.modal{
-  position:fixed; inset:0; z-index:100;
-  display:flex; align-items:center; justify-content:center;
-  padding:var(--space-24);
+/* ---------- philosophy ----------
+   Term + explanation on one rule each, the same shape the case study uses for
+   its module list: a fixed name column, a hairline between rows, no bullets. */
+.principles{ list-style:none; margin:0; padding:0; }
+.principles > li{
+  display:grid; grid-template-columns:260px 1fr; gap:var(--space-24);
+  align-items:start;
+  padding:var(--space-24) 0; border-top:1px solid var(--border);
 }
-.modal-scrim{ position:absolute; inset:0; background:var(--scrim); }
-.modal-panel{
-  position:relative;
-  width:min(var(--measure-modal), 100%);
-  max-height:calc(100vh - var(--space-48));
-  display:flex; flex-direction:column;
-  background:var(--canvas);
-  border:1px solid var(--border); border-radius:var(--radius-card);
-  box-shadow:var(--shadow-modal);
+.principles > li:first-child{ border-top:0; padding-top:0; }
+.principles > li:last-child{ padding-bottom:0; }
+.p-name{
+  font-size:var(--text-nested); line-height:1.5;
+  font-weight:var(--fw-medium); color:var(--ink);
 }
-.modal-head{
-  flex:0 0 auto; display:flex; align-items:center; gap:var(--space-16);
-  justify-content:space-between;
-  padding:var(--space-24) var(--space-32);
-  border-bottom:1px solid var(--border);
-}
-.modal-title{
-  margin:0; font-family:var(--font-mono); font-size:var(--text-caption);
-  letter-spacing:var(--tracking-mono); text-transform:uppercase;
-  color:var(--ink-2); line-height:1.5;
-}
-.modal-x{
-  flex:0 0 32px; width:32px; height:32px;
-  background:transparent; border:1px solid var(--ghost-border);
-  border-radius:var(--radius-pill); cursor:pointer; color:var(--ink-2);
-  display:inline-flex; align-items:center; justify-content:center;
-  transition:border-color .15s ease, color .15s ease;
-}
-.modal-x:hover{ border-color:var(--stroke-art); color:var(--ink); }
-.modal-x svg{ width:14px; height:14px; display:block; }
-/* Focus lands here on open so the dialog's own name is announced. It is a
-   container, not a control, so it shows no ring — the trap does the work. */
-.modal-panel:focus{ outline:none; }
-/* tabindex=0 in the markup: a scroll region that keyboard users cannot reach
-   is content they cannot read. Focused, it takes arrow keys and PageDown. */
-.modal .deep-body{ overflow-y:auto; padding:var(--space-32); }
+.p-body{ font-size:var(--text-nested); line-height:1.6; color:var(--ink-2); }
 
-.deep-body{ padding:var(--space-32) var(--space-24) var(--space-24); }
-.deep-body > *:last-child{ margin-bottom:0; }
-.deep-body p{ font-size:var(--text-nested); line-height:1.6; color:var(--ink-2); }
-.deep-body h4{
-  font-family:var(--font-mono); font-size:var(--text-caption);
-  letter-spacing:var(--tracking-mono); text-transform:uppercase;
-  color:var(--ink-3); margin:var(--space-40) 0 var(--space-16); font-weight:var(--fw-medium);
+/* ---------- team ----------
+   A credit list, not a gallery. This is one person's portfolio: the six names
+   belong here because the work was not done alone, but a grid of portrait tiles
+   made them the largest faces on the page and pulled attention off the work.
+   Each entry is now a row — a 36px avatar beside the name — which is the size a
+   byline uses: enough to read as a person, not enough to study a face.
+   No card chrome either: no border, no fill, no radius on the row. The list is
+   held together by alignment alone, which is as much weight as it should carry.
+   260px minimum gives three columns across the 892px measure, so six people
+   land as a tidy 3 x 2 instead of an orphaned last row. */
+.team{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
+  gap:var(--space-16) var(--space-24);
+  list-style:none; margin:0; padding:0;
 }
-.deep-body h4:first-child{ margin-top:0; }
-.deep-body h5{
-  font-size:var(--text-body); font-weight:var(--fw-medium);
-  color:var(--ink); margin:var(--space-32) 0 var(--space-8);
+.team figure{
+  margin:0;
+  display:flex; align-items:center; gap:10px;
 }
-.deep-body figure{ margin:var(--space-32) 0; }
-/* Modal sub-headings carry the same lime marker as the section anchors, but
-   the highlight sits on an INNER span: h4 must stay display:block or its
-   40px/16px margins vanish (inline boxes ignore vertical margin), whereas
-   .sec h2 can be inline because its parent .sec div owns the spacing. */
-.deep-body h4 .mark{
-  display:inline;
-  background:var(--accent-wash); color:var(--ink);
-  padding:0 8px; border-radius:3px;
-  -webkit-box-decoration-break:clone;
-          box-decoration-break:clone;
+.team img{
+  flex:none;
+  width:36px; height:36px;
+  border-radius:50%; object-fit:cover;
+  /* Anchored to the top of the frame: a square headshot cropped to a circle
+     loses the chin before it loses the forehead, and a face centred in its
+     source sits slightly high once the corners are gone. */
+  object-position:top center;
+  border:0;
+  background:var(--surface-art);
 }
-/* the partner's verbatim ask — decorative mark, then the ask as four points */
-/* Narration, not the partner's words — so it sits ABOVE the quotation mark
-   and runs quieter than the quoted bullets. --ink-2, never --ink-body: in
-   light mode --ink-body IS --ink, which would flatten it against the quote. */
-.deep-body blockquote .q-intro{
-  margin:0 0 16px;
-  font-size:var(--text-nested); line-height:1.6;
-  color:var(--ink-2);
+/* min-width:0 so a long role can shrink rather than push the row wider. */
+.team figcaption{ margin:0; min-width:0; }
+/* The role leads and the name follows — the reverse of the usual credit line,
+   and deliberate. On someone else's portfolio the discipline is the useful
+   fact: it says what the team was made of. The names are there to credit real
+   people, not to be read. Swapped in the markup too, not just with CSS order,
+   so a screen reader hears the same sequence the eye sees. */
+/* Same size as the name. The two are separated by weight and ink alone —
+   medium against regular, --ink against --ink-3 — which is enough to rank them
+   without either one growing. Keeping both at --text-caption also holds the
+   whole block at credit-line scale, which is the point of the section. */
+.t-role{
+  display:block;
+  font-size:var(--text-caption); line-height:1.4;
+  font-weight:var(--fw-medium); color:var(--ink);
 }
-.deep-body blockquote .q-mark{
-  display:block; font-family:var(--font-sans);
-  font-size:44px; line-height:0.7; color:var(--ink-3);
-  margin:0 0 14px;
+.t-name{
+  display:block; margin-top:2px;
+  font-size:var(--text-caption); line-height:1.4; color:var(--ink-3);
 }
-.q-points{ list-style:none; margin:0; padding:0; }
-.q-points > li{
-  display:grid; grid-template-columns:auto 1fr; column-gap:9px;
-  color:var(--ink);
-}
-.q-points > li + li{ margin-top:10px; }
-.q-points > li::before{ content:"\2022"; color:var(--ink-3); }
 
-.deep-body blockquote{
-  margin:var(--space-24) 0; padding:var(--space-24);
-  border:1px solid var(--border); border-radius:var(--radius-card);
-  background:var(--surface-raised);
-  font-size:var(--text-nested); line-height:1.6; color:var(--ink-body);
+/* ---------- contact ----------
+   Full-bleed, with the webm running behind it. Built on the same two facts the
+   ecosystem band established: the file's ground is #000000 at every edge, and
+   mix-blend-mode:screen returns the backdrop wherever the source is black, so
+   the video dissolves into whatever colour the band is rather than sitting on
+   it as a rectangle. Light keeps the pure black; dark drops to
+   --surface-sunken, the palette's own step below canvas, because #000 against
+   #242424 reads as a hole rather than a surface.
+   isolation:isolate keeps the blend inside this section — without it `screen`
+   would reach for whatever is painted behind the section too. */
+.contact-band{
+  --canvas:#000000;
+  position:relative; isolation:isolate; overflow:hidden;
+  background:var(--canvas); color:var(--ink-body);
 }
-.deep-body blockquote p{ color:var(--ink); margin:0 0 10px; }
-.deep-body blockquote p:last-child{ margin-bottom:0; }
+[data-theme="dark"] .contact-band{ --canvas:var(--surface-sunken); }
+.contact-bg{
+  position:absolute; inset:0; z-index:0;
+  width:100%; height:100%;
+  object-fit:cover; object-position:center;
+  mix-blend-mode:screen;
+  /* Same settle as the hero. It starts from 1, not .8 — that is the opacity it
+     already had — and lands on the same .35, so both instances of the file come
+     to rest at the same weight. */
+  animation:contact-bg-settle 2.5s ease-in-out forwards;
+  pointer-events:none;
+}
+@keyframes contact-bg-settle{
+  0%, 40%{ opacity:1; }
+  100%{ opacity:.35; }
+}
+/* The content rides above the video; the video is the only thing at z-index 0. */
+.contact-band > .wrap{ position:relative; z-index:1; }
 
-/* ---------- charts ---------- */
-.chart{ width:100%; height:auto; display:block; }
-.lt-bars{ display:flex; align-items:flex-end; gap:var(--space-24); height:150px; }
-.lt-bar-wrap{ flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%; }
-.lt-bar{ width:100%; background:var(--ink); position:relative; }
-.lt-bar .val{
-  position:absolute; top:-26px; left:0; right:0; text-align:center;
-  font-size:var(--text-body-sm); font-weight:var(--fw-medium);
-  color:var(--ink); font-variant-numeric:tabular-nums;
-}
-.lt-labels{ display:flex; gap:var(--space-24); margin-top:12px; }
-.lt-labels span{ flex:1; text-align:center; font-size:var(--text-caption); color:var(--ink-3); }
-
-/* ---------- end matter ---------- */
-.note{
-  border-top:1px solid var(--border); padding-top:var(--space-24);
-  font-size:var(--text-body-sm); line-height:1.6; color:var(--ink-3);
-}
 .burst{
   background:var(--accent); color:var(--accent-ink);
   border-radius:var(--radius-card);
   padding:var(--space-64) var(--space-48);
 }
-.burst .b-kicker{
-  font-family:var(--font-mono); font-size:var(--text-caption);
-  letter-spacing:var(--tracking-mono); text-transform:uppercase;
-  color:var(--accent-ink); opacity:.66; margin:0 0 var(--space-16);
-}
 .burst h2{
   font-size:var(--text-heading-sm); line-height:1.32;
   color:var(--accent-ink); margin:0 0 var(--space-16);
+  max-width:var(--measure);
 }
-.burst p{ font-size:var(--text-body); line-height:1.6; color:var(--accent-ink); opacity:.8; margin:0 0 var(--space-32); }
+.burst p{
+  font-size:var(--text-body); line-height:1.6; color:var(--accent-ink);
+  opacity:.8; margin:0 0 var(--space-32); max-width:var(--measure);
+}
 .btn{
   font-family:var(--font-sans); font-size:var(--text-body-sm);
   font-weight:var(--fw-medium); letter-spacing:var(--tracking);
@@ -978,6 +1192,21 @@ figcaption .cap-n{
   transition:background .15s ease;
 }
 .btn:hover{ background:#000; }
+/* Direct contact under the button, for anyone who scrolls rather than clicks.
+   It sits on the lime, so it takes --accent-ink at reduced opacity — --ink-3
+   is a canvas-relative grey and would all but vanish here.
+   Scoped under .burst deliberately: the `.burst p` rule above is 0-1-1 and
+   would beat a bare .burst-contact on every one of these declarations. */
+.burst .burst-contact{
+  font-family:var(--font-mono); font-size:var(--text-caption);
+  letter-spacing:var(--tracking-mono); line-height:1.9;
+  color:var(--accent-ink); opacity:.7;
+  margin:var(--space-24) 0 0;
+}
+.burst .burst-contact a{ color:inherit; text-decoration:none; }
+.burst .burst-contact a:hover{ text-decoration:underline; text-underline-offset:3px; }
+
+/* ---------- footer ---------- */
 footer{
   border-top:1px solid var(--border);
   padding:var(--space-32) 0 var(--space-96);
@@ -988,179 +1217,126 @@ footer p{
 }
 
 /* ============================================================
-   DIAGRAM PRIMITIVES — every stroke/fill/label resolves through
-   a token, so all figures invert with the mode. Monochrome.
+   MOBILE — 720px, the same breakpoint as the case study.
+   Overrides tokens where possible rather than rewriting rules.
    ============================================================ */
-.dg-connector{ stroke:var(--stroke-art); fill:none; }
-.dg-line{      stroke:var(--border-strong); fill:none; }
-.dg-line-ink{  stroke:var(--ink); fill:none; }
-.dg-box{       fill:var(--surface); stroke:var(--border-strong); }
-.dg-box-hi{    fill:var(--surface-raised); stroke:var(--ink); }
-.dg-fill-ink{  fill:var(--ink); stroke:none; }
-.dg-ring{      fill:var(--ink); stroke:var(--surface-art); }
-.dg-t{     font-family:var(--font-mono); fill:var(--ink);   letter-spacing:0; }
-.dg-t2{    font-family:var(--font-mono); fill:var(--ink-3); letter-spacing:0; }
-.dg-t-sub{ font-family:var(--font-sans); fill:var(--ink-3); letter-spacing:0; }
-
-/* ============================================================
-   VERTICAL RHYTHM
-   .article is a grid container, so adjacent margins NEVER collapse
-   — a top+bottom pair would sum. Convention: article children carry
-   NO margin of their own; each gap is declared exactly once by the
-   pair rule below. Every selector is specificity (0,1,0) via
-   :where(), so resolution is pure source order — later wins.
-   Scale: line 28.8 -> para 28 -> block 48 -> figure 56 -> section 80
-   ============================================================ */
-/* margin, not margin-block: <figure> carries a UA default of `1em 40px`, so
-   zeroing only top/bottom leaves a 40px inline inset that pulls figures off
-   the column. .wide used to mask this by setting margin-inline itself. */
-.article > *{ margin:0; }
-
-/* 1 — baseline: paragraph to paragraph */
-.article > * + *{ margin-top:var(--gap-para); }
-
-/* 2 — blocks that claim air above them */
-.article > * + :where(.stat-rail, .stat-card, .inline-list, .note, h3.sub, .pull, footer, .kicker){
-  margin-top:var(--gap-block);
-}
-/* 3 — and the air they leave below */
-.article > :where(.stat-rail, .stat-card, .inline-list, .note, .pull) + *{
-  margin-top:var(--gap-block);
-}
-
-/* 3b — the three decision boxes. Their own register, declared after 2/3 so it
-        wins on both sides: they need to read as separated blocks, not as
-        paragraphs and not as full section breaks. */
-.article > * + :where(.dbox){ margin-top:var(--gap-dbox); }
-.article > :where(.dbox) + *{ margin-top:var(--gap-dbox); }
-
-/* 3c — the two direction boxes are ONE statement pair: full block air around
-        the pair, a tight seam between them so they group visually. The seam
-        rule is declared last so it beats the block rule above. */
-.article > * + :where(.dirbox){ margin-top:var(--gap-block); }
-.article > :where(.dirbox) + *{ margin-top:var(--gap-block); }
-.article > :where(.dirbox) + :where(.dirbox){ margin-top:var(--space-16); }
-
-/* 4 — figures sit symmetrically; overrides the 48 register both ways */
-.article > * + :where(figure){ margin-top:var(--gap-figure); }
-.article > :where(figure) + *{ margin-top:var(--gap-figure); }
-
-/* 5 — section-level breaks. Declared after everything else so the gap
-       above a section is uniform no matter what precedes it. */
-.article > * + :where(.sec, .burst){ margin-top:var(--gap-section); }
-
-/* 6 — headings bind tightly to the content they introduce */
-.article > :where(.sec) + *{ margin-top:var(--gap-sec-after); }
-.article > :where(h3.sub) + *{ margin-top:var(--gap-subhead-after); }
-/* an eyebrow label binds to the block it frames, same as a sub-heading */
-.article > :where(.kicker) + *{ margin-top:var(--gap-subhead-after); }
-
-/* 7 — a pull-quote is not "the first paragraph": it keeps its own
-       symmetric 48 even when it directly follows a sub-heading. */
-.article > :where(h3.sub) + :where(.pull){ margin-top:var(--gap-block); }
-
 @media (max-width:720px){
   :root{
-    --text-h2:24px;      /* must shrink: otherwise headings read LARGER
-                            relative to body on mobile than on desktop */
+    --text-h2:24px;
     --text-lede:18px;
-    --text-pull:18px;
     --text-prose:17px;
-    --text-nested:15px;  /* stays below body so the deep-dive distinction survives */
-    --gap-block:40px; --gap-figure:48px; --gap-section:64px;
-    --gap-dbox:24px;
-    /* 22, not 20 (would stay tied to body copy) and not 24 (would tie
-       with the section h2 at this breakpoint). */
-    --text-dbox-title:22px;
+    --text-nested:15px;
+    /* --gap-figure now governs the ecosystem video, so it needs the same
+       mobile step-down the case study gives it: 56 -> 48, alongside 48 -> 40.
+       --gap-page-section stays at its old 64 rather than following the desktop
+       step up to 112: a phone shows one section at a time, so the boundary is
+       already unambiguous and the height would be spent for nothing. It does
+       leave the mobile step at 64/40 = 1.6x, the flat ratio the desktop change
+       set out to fix — raise this to 80 if the sub-heads start competing here
+       too. */
+    --gap-block:40px; --gap-figure:48px; --gap-page-section:64px;
   }
-  /* Page gutter 24 -> 16 on mobile. 24px is a desktop-scale margin; on a
-     390px screen it costs 16px of column for no reading benefit. 16px is the
-     news-site convention, and it also brings the fixed notice bar — already
-     inset 16px — into line with the text column, which was 8px out.
-     The decision boxes keep their own 24px inner padding below, so box
-     content still sits 40px from the screen edge, not against it. */
-  .article{
-    grid-template-columns:
-      minmax(var(--space-16), 1fr)
-      min(var(--measure), 100% - var(--space-32))
-      minmax(var(--space-16), 1fr);
-  }
-  /* The hero's wide break subtracts one page margin from the span it is
-     allowed. That margin has to shrink with the gutter, or the hero lands
-     8px narrower than every other block instead of collapsing onto the
-     column exactly. */
-  .article > .wide{ width:min(var(--measure-wide), 100% - var(--space-16)); }
-
-  .dbox{ padding:var(--space-24); }
-  .dirbox{ padding:20px; }
-  /* .dir-msg rides --text-subhead, one of the two article tokens with no
-     mobile step. At 20px it sat 5px over the 15px label and 3px over 17px
-     body copy, so on a phone the box shouted instead of speaking.
-     18px keeps it one step above body — the box is a statement, not prose —
-     and the label still separates on weight (500 vs 400) and ink (--ink vs
-     --ink-2), which were always doing more of that work than size. */
-  .dirbox .dir-msg{ font-size:18px; }
-  /* 292px of inner width cannot carry a 170px name column: stack instead,
-     with a tight gap so each name still owns the modules beneath it. */
-  .mod-list > li{ grid-template-columns:1fr; gap:4px; }
-  .modal{ padding:var(--space-16); }
-  .modal-panel{ max-height:calc(100vh - var(--space-32)); }
-  .modal-head{ padding:var(--space-16) var(--space-24); }
-  .modal .deep-body{ padding:var(--space-24) var(--space-16); }
-  h1.title{ font-size:30px; }
-  /* h2 needs no mobile override any more — the base rule already uses the
-     zero-padding / 1.45 formula that clears wrapped lines at every size. */
   body{ font-size:var(--text-prose); }
-  .pull{ padding-left:var(--space-24); }
-  /* Stats become ONE horizontally-scrollable row — each stat stays intact,
-     nothing breaks mid-unit. The edge fade is a "scroll shadow": two
-     canvas-coloured covers painted with background-attachment:local (so they
-     travel with the content) sit ON TOP of two fades attached to the
-     scrollport. At rest the cover hides the fade; the moment there is more to
-     scroll, the cover slides away and the fade appears. So the affordance is
-     self-managing — it shows only while there is genuinely more to see, and
-     it works on both edges without any JS. */
-  .figures{
-    flex-wrap:nowrap;
-    gap:var(--space-32);
-    overflow-x:auto;
-    -webkit-overflow-scrolling:touch;
-    scrollbar-width:none;                    /* Firefox */
+  /* 24px is a desktop-scale margin; on a phone it costs column width for no
+     reading benefit. 16px is the news-site convention. */
+  .wrap{ padding-inline:var(--space-16); }
+  .topbar-inner{ padding:0 var(--space-16); height:56px; }
+  /* The mark is proportioned to a 60px bar and the bar is 56 here, so it steps
+     down with it. */
+  .brand{ font-size:16px; }
+  .tb-photo{ width:24px; height:24px; }
+  /* Aligned with .wrap's 16px gutter here, not 24, so the floating button sits
+     on the same edge as the content beneath it. Docked top is (56 - 34)/2. */
+  .theme-toggle{ right:calc(var(--space-16) + env(safe-area-inset-right)); }
+  .topbar.is-visible ~ .theme-toggle{ top:11px; right:var(--space-16); }
+  .hero{ padding-block:var(--space-32) calc(var(--gap-page-section) / 2); }
+  /* The panel keeps its inset, at phone scale — 48px of side padding inside a
+     358px box would leave the headline barely 260px to work with. */
+  .hero-box, .about-box{ padding:var(--space-32) var(--space-24); }
+  /* One column: the rail stacks above the statement, keeping the reading order
+     it already has in the markup. The photo is capped rather than left at 100%
+     of the column — a full-width square would eat most of a phone screen before
+     the headline appeared. */
+  .hero-grid{ grid-template-columns:1fr; gap:var(--space-32); }
+  /* Photo, name and role share one row on a phone. Stacked, the square plus two
+     lines of text pushed the headline most of a screen down before it appeared.
+     The photo spans both rows so it centres against the text beside it; placing
+     the three children explicitly keeps this a mobile-only override rather than
+     forcing a wrapper element the desktop layout has no use for. */
+  .id-rail{
+    display:grid; grid-template-columns:96px 1fr;
+    column-gap:var(--space-16); align-items:center;
   }
-  .figures::-webkit-scrollbar{ display:none; } /* Safari / Chrome */
-  .figures{ scroll-snap-type:x mandatory; }
-  .rail-track{ display:flex; gap:var(--space-32); flex:0 0 auto; }
-  .rail-track > div{ flex:0 0 auto; scroll-snap-align:start; }
-  /* The last stat is narrower than the scrollport, so its start edge can
-     never reach a scrollable position — under mandatory snapping that would
-     make it unreachable. Snapping its END edge keeps it available. */
-  .rail-track > div:last-child{ scroll-snap-align:end; }
-  .stat-rail.drifting .rail-track{
-    animation:rail-drift var(--rail-dur, 26s) linear infinite;
-    will-change:transform;
+  .id-photo{
+    grid-column:1; grid-row:1 / span 2;
+    width:96px; max-width:none; margin-bottom:0;
   }
-  .figures .f-num, .figures .f-lab{ white-space:nowrap; }
-  .fig-media{ padding:var(--space-24) var(--space-16); }
-  /* the hero shot bleeds to its frame at every width — the rule above is
-     later in the file and would otherwise reintroduce padding here. */
-  .hero-shot{ padding:0; }
-  .shot-frame{ padding:12px; }
-  .ba{ flex-direction:column; gap:var(--space-16); }
-  .ba .ba-arrow{ transform:rotate(90deg); }
+  .id-name{ grid-column:2; grid-row:1; align-self:end; }
+  .id-role{ grid-column:2; grid-row:2; align-self:start; }
+  h1.title{ font-size:26px; }
+  /* One card per row: two columns of ~160px would break every project name. */
+  .grid{ grid-template-columns:1fr; }
+  /* 280 on a 358px row leaves a clear sliver of the next card. At 320 the peek
+     was 38px, which reads as a clipped card rather than an invitation. */
+  .strip .card{ flex-basis:280px; }
+  /* EXPERIMENT — phone keeps the desktop's row instead of stacking.
+     The card inherits flex-direction:row from the base rule; only the split and
+     the side change. order:-1 puts the picture on the LEFT while the DOM keeps
+     body-then-media, so a screen reader still hears the project name before its
+     illustration, exactly as on desktop.
+     36%, not the desktop's 40%: the earlier stack existed because a 60/40 split
+     left the copy 167px between its own 24px padding. Dropping the body to 16px
+     of padding and the picture to 36% gives it 196px on a 390px screen and
+     177px at 360 — the "Read case study" pill measures 159px, so it holds on
+     one line down to 360. Below that it does not; see the guard after this
+     block.
+     No fixed height any more: align-items:stretch makes the picture as tall as
+     whatever the copy needs, so the two columns always end flush. */
+  .grid-feature .card-media{ flex:0 0 36%; height:auto; order:-1; }
+  .grid-feature .card-body{ flex:1 1 auto; padding:var(--space-16); }
+  .card-media{ padding:12px; }
+  /* 292px of inner width cannot carry a 260px name column: stack instead,
+     with a tight gap so each name still owns the text beneath it. */
+  .principles > li{ grid-template-columns:1fr; gap:6px; padding:var(--space-16) 0; }
+  .timeline > li{ grid-template-columns:1fr; gap:4px; }
+  /* Two columns, not one. A single column left the whole right half of the
+     screen empty beside a 36px avatar and two short lines.
+     Each column gets 171px, leaving 125px for the text beside a 36px avatar.
+     At --text-caption every role fits on one line, so the avatar keeps its
+     desktop size here — no phone-only shrink is needed any more. */
+  .team{ grid-template-columns:1fr 1fr; gap:var(--space-16); }
   .burst{ padding:var(--space-40) var(--space-24); }
+  .band .eco-wide{ display:none; }
+  .band .eco-tall{ display:block; }
+}
+
+/* Narrow-phone guard for the Case Studies row (iPhone SE 1st gen and the like).
+   At 320px the card is 288 wide; at 36% + 16px padding the copy column falls to
+   151px and the 159px "Read case study" pill breaks onto two lines, which
+   doubles the pill's height and pushes the card taller than the picture beside
+   it. 30% + 12px padding returns 178px and the label holds. Below 320 nothing
+   ships, so this is the floor. */
+@media (max-width:359px){
+  .grid-feature .card-media{ flex-basis:30%; }
+  .grid-feature .card-body{ padding:12px; }
 }
 </style>
 </head>
 <body>
 
-<div class="tint-strip" id="tintStrip" aria-hidden="true"></div>
 
-<div class="topbar">
+<header class="topbar" id="topbar">
   <div class="topbar-inner">
-    <span class="brand">Selected Work</span>
-    <div class="right">
-      <span class="role">Head of Product</span>
-      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle colour mode">
+    <!-- alt is empty on purpose: the words beside it say the same thing and are
+         never hidden, so a screen reader would otherwise hear the name twice. -->
+    <span class="brand">
+      <img class="tb-photo" src="images/nemo.png" alt="" decoding="async">
+      Nemo's Portfolio
+    </span>
+  </div>
+</header>
+
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle colour mode">
         <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
           <circle cx="12" cy="12" r="4.2"/>
           <line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/>
@@ -1171,543 +1347,314 @@ footer p{
         <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
           <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/>
         </svg>
-      </button>
+</button>
+
+<main>
+
+  <!-- ============ HERO ============ -->
+  <section class="hero-band">
+    <video class="hero-bg" src="videos/contact-bg.webm"
+           autoplay loop muted playsinline preload="none" aria-hidden="true"></video>
+    <div class="wrap hero">
+    <div class="folder-tab" aria-hidden="true"><span class="folder-dot"></span>Portfolio</div>
+    <div class="hero-box">
+    <div class="hero-grid">
+
+      <div class="id-rail">
+        <img class="id-photo" src="images/nemo.png" alt="Dao Ngoc Nam" decoding="async">
+        <p class="id-name">Dao Ngoc Nam <span class="id-alias">(Nemo)</span></p>
+        <p class="id-role">Head of Product &middot; Platform Architect</p>
+      </div>
+
+      <div class="statement">
+        <h1 class="title">I architect the platforms that run brokerages.</h1>
+        <p class="deck">Over ~7 years across FX/CFD brokerages, I've rebuilt entire trading stacks and architected the platforms behind them — partnerships, CRM, back office, payments, BI, and AI — most of it from the ground up, as the product owner leading small teams.</p>
+      </div>
+
     </div>
-  </div>
-</div>
-
-<nav class="toc" id="toc" aria-label="Contents"></nav>
-
-<article class="article">
-
-  <!-- ============ MASTHEAD ============ -->
-  <header class="masthead">
-    <p class="kicker">Case Study</p>
-    <h1 class="title">Partnership System</h1>
-    <p class="byline">Head of Product · 1 PM + 4 engineers · 6 months · shipped January 2026</p>
-    <p class="deck">The infrastructure that turns partner referrals into a revenue channel</p>
-  </header>
-
-  <p class="lede">In CFD brokerage, partnership (IB - Introducing Broker) is the referral model: partners bring in clients and earn commission on their trading. It's one of the lowest marginal-cost acquisition channels in the industry, and one of the steadiest.</p>
-
-  <figure class="wide">
-    <div class="fig-media hero-shot">
-      <img class="shot-img shot-img-light" src="images/hero-light.webp"
-           width="2000" height="951" alt="Partner Area dashboard — revenue, referral tools and partnership tier progress — beside a multi-level referral tree running from the broker down through partner clients" fetchpriority="high" decoding="async">
-      <img class="shot-img shot-img-dark" src="images/hero-dark.webp"
-           width="2000" height="951" alt="Partner Area dashboard — revenue, referral tools and partnership tier progress — beside a multi-level referral tree running from the broker down through partner clients" fetchpriority="high" decoding="async">
     </div>
-  </figure>
-
-  <div class="stat-card">
-    <p class="kicker">Six months after launch</p>
-    <div class="stat-rail">
-      <div class="figures">
-        <div><span class="f-num">5<span class="arrow">→</span>517</span><span class="f-lab">Partners</span></div>
-        <div><span class="f-num">6.0%<span class="arrow">→</span>11.8%</span><span class="f-lab">Share of new funded clients</span></div>
-        <div><span class="f-num">5 person-days/mo<span class="arrow">→</span>0</span><span class="f-lab">Payout reconciliation</span></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============ 01 ============ -->
-  <div class="sec">
-    <h2>Why build it</h2>
-  </div>
-
-  <p>When I returned to the broker as Head of Product, the partner business already existed — with just 5 partners — but had no system behind it at all.</p>
-
-  <p>Drawing on my experience at Exness, a top-tier company, I saw the need to bring that partnership model and system architecture back to the broker, to scale a segment with real potential.</p>
-
-  <p>The problems with the old model were clear:</p>
-
-  <ul class="inline-list">
-    <li>
-      <div class="il-head">
-        <span class="il-icon">
-          <!-- placeholder: spreadsheet grid -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="3" y="4" width="18" height="16" rx="2"/>
-            <line x1="3" y1="9" x2="21" y2="9"/>
-            <line x1="3" y1="14.5" x2="21" y2="14.5"/>
-            <line x1="9" y1="9" x2="9" y2="20"/>
-            <line x1="15" y1="9" x2="15" y2="20"/>
-          </svg>
-        </span>
-        <span class="il-title">No system</span>
-      </div>
-      <ul class="il-points">
-        <li>Partners and rewards managed in spreadsheets.</li>
-        <li>Partner relationships and schemes managed through MT5 group naming.</li>
-      </ul>
-    </li>
-    <li>
-      <div class="il-head">
-        <span class="il-icon">
-          <!-- placeholder: warning triangle -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 4 L21 19.5 L3 19.5 Z"/>
-            <line x1="12" y1="10" x2="12" y2="14"/>
-            <circle cx="12" cy="16.6" r="0.6" fill="currentColor" stroke="none"/>
-          </svg>
-        </span>
-        <span class="il-title">Operational risk</span>
-      </div>
-      <ul class="il-points">
-        <li>Only one person in the company knew how to calculate rewards manually.</li>
-        <li>Reward calculation took up to 5 days a month, and still required manual C-level review.</li>
-      </ul>
-    </li>
-    <li>
-      <div class="il-head">
-        <span class="il-icon">
-          <!-- placeholder: growth capped by a ceiling -->
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <line x1="3" y1="7" x2="21" y2="7" stroke-dasharray="2.5 2.5"/>
-            <path d="M3.5 19.5 C 9 19, 12 11.5, 20.5 11"/>
-          </svg>
-        </span>
-        <span class="il-title">Couldn't scale</span>
-      </div>
-      <ul class="il-points">
-        <li>No UI for partners to see their business represented.</li>
-        <li>Partner count couldn't grow.</li>
-      </ul>
-    </li>
-  </ul>
-
-  <!-- ============ 02 ============ -->
-  <div class="sec">
-    <h2>Big directions</h2>
-  </div>
-
-  <p>Partnership systems have been in this market for years. I was building one late — so I studied what already existed. I broke down what we needed internally, and drew on what I'd seen meeting partners at Exness offline seminars. The goal: learn from the strengths of other systems, and fix their weaknesses. From that, I set two main directions.</p>
-
-  <div class="dirbox">
-    <h3 class="dir-label">
-      <svg class="dir-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <rect x="5" y="5" width="12" height="12" rx="2"/>
-        <rect x="23" y="5" width="12" height="12" rx="2"/>
-        <rect x="5" y="23" width="12" height="12" rx="2"/>
-        <rect x="23" y="23" width="12" height="12" rx="2" stroke-dasharray="2.5 2.5"/>
-        <line x1="17" y1="11" x2="23" y2="11"/>
-        <line x1="11" y1="17" x2="11" y2="23"/>
-        <line x1="29" y1="17" x2="29" y2="23" stroke-dasharray="2 2"/>
-        <line x1="17" y1="29" x2="23" y2="29" stroke-dasharray="2 2"/>
-      </svg>
-      Architecture design direction
-    </h3>
-    <p class="dir-msg">The system had to scale without limits, to handle whatever partners might ask for. The infrastructure and data schema didn't need to be perfect — but they always had to leave room to adopt new requirements.</p>
-  </div>
-
-  <div class="dirbox">
-    <h3 class="dir-label">
-      <svg class="dir-icon" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M20 5 L32 9 V20 C32 28 26 33 20 35 C14 33 8 28 8 20 V9 Z"/>
-        <path d="M15 20 L18.5 23.5 L25 16"/>
-      </svg>
-      User direction
-    </h3>
-    <p class="dir-msg">This system touches money, and the people using it — company staff — make mistakes.</p>
-    <p class="dir-msg">So it needed multiple layers of protection against user error. Guarding against careless mistakes became a key item on the development checklist.</p>
-  </div>
-
-  <!-- ============ 03 — parent section, holds decisions A / B / C ============ -->
-  <div class="sec">
-    <h2>Key decisions</h2>
-  </div>
-
-  <p>This was a demanding, genuinely interesting project. It forced a few big structural decisions — and a constant obsession with scaling without limits. Below are the two biggest decisions, then an overview of the system's main modules.</p>
-
-  <section class="dbox">
-    <h3 class="dbox-title">Rebuilding the CRM &amp; Back Office data schema</h3>
-
-    <p>We wanted to scale without limits, but the data schema at the time couldn't support that. The original system was designed to run a simple broker model — not to plug into a Partnership System with complex customization needs.</p>
-
-    <p>So I made a decision that was painful, costly, and risky, but a risk I could control: tear down most of the old structure, rebuild it, and migrate the data from scratch.</p>
-
-    <p class="pull">I wasn't willing to build on top of a weak foundation.</p>
-
-    <figure>
-      <div class="fig-media shot-frame">
-        <img class="shot-img shot-img-light" src="images/fig1-light.webp"
-             width="2000" height="1092" alt="Before and after: on the left every client in the company sits in one group sharing a single config; on the right clients are split into Client Group 1 and Client Group 2, each with its own trading and payment config, and a client can hold several account types such as Standard, Pro or Mini" loading="lazy" decoding="async">
-        <img class="shot-img shot-img-dark" src="images/fig1-dark.webp"
-             width="2000" height="1092" alt="Before and after: on the left every client in the company sits in one group sharing a single config; on the right clients are split into Client Group 1 and Client Group 2, each with its own trading and payment config, and a client can hold several account types such as Standard, Pro or Mini" loading="lazy" decoding="async">
-      </div>
-      <figcaption><span class="cap-n">Caption</span>Before and after: every client was treated the same, with no grouping. Client group became a first-class entity with its own configurable attributes.</figcaption>
-    </figure>
-
-    <button class="deep-open" type="button" data-modal="dm-1"
-            aria-label="Read more about this decision — rebuilding the CRM and Back Office data schema">Read more about this decision <span class="arw" aria-hidden="true">&rarr;</span></button>
-
-    <div class="modal" id="dm-1" hidden>
-      <div class="modal-scrim" data-close></div>
-      <div class="modal-panel" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="dm-1-title">
-        <div class="modal-head">
-          <p class="modal-title" id="dm-1-title">Rebuilding the CRM &amp; Back Office data schema</p>
-          <button class="modal-x" type="button" data-close aria-label="Close deep dive">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-          </button>
-        </div>
-        <div class="deep-body" tabindex="0">
-          <h4><span class="mark">The setup</span></h4>
-          <p>As covered earlier, we had to rebuild the data schema and add foundational CRM features to support the partnership system — all to meet our partners' demanding requirements. Here's a real example of what "the schema couldn't support it" looked like: a request from a large partner during negotiation.</p>
-
-          <h4><span class="mark">What the partner asked for</span></h4>
-          <blockquote>
-            <p class="q-intro">Say a partner — John, with a network of 2,000 clients large and small — wants to work with the broker, and comes in with a demanding set of requirements:</p>
-            <span class="q-mark" aria-hidden="true">&ldquo;</span>
-            <ul class="q-points">
-              <li>I want two different client groups — one with a higher trading fee, one with lower.</li>
-              <li>I want to decide which clients go into which group.</li>
-              <li>But within each group, I still want multiple account types, from low fee to high, for the client to choose from.</li>
-              <li>And for each account type, I want a different partner reward when that client trades.</li>
-            </ul>
-          </blockquote>
-
-          <figure>
-              <div class="fig-media shot-frame">
-                <img class="shot-img shot-img-light" src="images/fig2-light.webp"
-                     width="2000" height="1153" alt="John's request mapped as a hierarchy: one partner group branches into two client groups; each client group holds several account types (demo and real, standard, pro and investor); and each real account type carries its own partner scheme — a CPA amount, a rebate share, or both" loading="lazy" decoding="async">
-                <img class="shot-img shot-img-dark" src="images/fig2-dark.webp"
-                     width="2000" height="1153" alt="John's request mapped as a hierarchy: one partner group branches into two client groups; each client group holds several account types (demo and real, standard, pro and investor); and each real account type carries its own partner scheme — a CPA amount, a rebate share, or both" loading="lazy" decoding="async">
-              </div>
-              <figcaption><span class="cap-n">Caption</span>Here's John's request as a diagram. Back then, the system had no way to handle it — it didn't even have client groups or account types yet.</figcaption>
-            </figure>
-
-          <h4><span class="mark">Why the old schema couldn't handle this</span></h4>
-
-          <h5>Problem 1: No concept of a client group.</h5>
-          <p>Every client in the system was treated the same. There was no grouping — any change had to be hardcoded client by client.</p>
-          <p><b>Fix:</b> I introduced a client group as a first-class entity, with its own configurable attributes (exchange rate, which account types it's allowed to use, and so on). Clients get assigned to a group; a partner's clients can sit in a group built specifically for them.</p>
-
-          <h5>Problem 2: No concept of an account type.</h5>
-          <p>Trading accounts were controlled entirely through MT5 groups — the CRM itself had no definition of trading conditions at all.</p>
-          <p><b>Fix:</b> I introduced account type as a configurable entity, and linked it to client group: a given client group is restricted to a defined set of account types, each with its own spread, commission, and swap fee — from low to high.</p>
-
-          <figure>
-            <div class="fig-media shot-frame">
-              <img class="shot-img shot-img-light" src="images/fig1-light.webp"
-                   width="2000" height="1092" alt="Before and after: on the left every client in the company sits in one group sharing a single config; on the right clients are split into Client Group 1 and Client Group 2, each with its own trading and payment config, and a client can hold several account types such as Standard, Pro or Mini" loading="lazy" decoding="async">
-              <img class="shot-img shot-img-dark" src="images/fig1-dark.webp"
-                   width="2000" height="1092" alt="Before and after: on the left every client in the company sits in one group sharing a single config; on the right clients are split into Client Group 1 and Client Group 2, each with its own trading and payment config, and a client can hold several account types such as Standard, Pro or Mini" loading="lazy" decoding="async">
-            </div>
-          </figure>
-          <figure>
-            <div class="fig-media shot-frame">
-              <img class="shot-img shot-img-light" src="images/schemes-light.webp"
-                   width="2000" height="1092" alt="The new architecture in action: one partner group feeds two client groups; inside them each client holds several trading accounts of different types; and the account types map onto partner schemes — CPA amounts and rebate shares that differ per account type and per group" loading="lazy" decoding="async">
-              <img class="shot-img shot-img-dark" src="images/schemes-dark.webp"
-                   width="2000" height="1092" alt="The new architecture in action: one partner group feeds two client groups; inside them each client holds several trading accounts of different types; and the account types map onto partner schemes — CPA amounts and rebate shares that differ per account type and per group" loading="lazy" decoding="async">
-            </div>
-          </figure>
-
-          <h4><span class="mark">What this bought us</span></h4>
-          <p>This wasn't an easy call. Rebuilding meant losing time, burning effort, and taking on real operational and data risk — migration especially could go wrong in ways that hit live accounts. I sat with that trade-off for a while, but I didn't want to build the Partnership System on a foundation I already knew would collapse under it. Rebuilding first was the only path to something that could actually last.</p>
-          <p>That restructuring gave us a foundation solid enough to organize and manage clients properly — and it's exactly what the Partnership System was built on top of in the next phase. It's what lets the system satisfy every part of that partner's request, including the hardest one: a different reward for the same client, depending on which account type they trade from.</p>
-          <p>From that point on, the system could take on real customization and scale with it. A short-term risk for long-term flexibility — and it paid off.</p>
-        </div>
-      </div>
+    <!-- The 60% mark of the hero. The bar shows once this passes the top of the
+         viewport, so the trigger scales with the hero's real height instead of
+         a hard-coded pixel figure that would drift on every copy change. -->
+    <div class="hero-sentinel" id="heroSentinel" aria-hidden="true"></div>
     </div>
   </section>
 
-  <section class="dbox">
-    <h3 class="dbox-title">Managing partner schemes as dynamic modules</h3>
+  <!-- ============ CASE STUDIES ============ -->
+  <section class="wrap section" id="case-studies" aria-labelledby="cases-title">
+    <div class="sec"><h2 id="cases-title">Case Studies</h2></div>
 
-    <p>Working with partners — especially when negotiating and onboarding large ones — means they'll ask to change their scheme, customize it, or even switch it mid-run. Every large partner also comes with its own set of custom requirements.</p>
-
-    <p>So I designed the architecture to manage schemes as modules from the start, to maximize customization without needing to touch the code.</p>
-
-    <figure>
-      <div class="fig-media shot-frame">
-        <img class="shot-img shot-img-light" src="images/modules-light.webp"
-             width="2000" height="1360" alt="A partner program broken into configurable modules across four rows: the Custom IB Program at the top branches into Client Group 1 (lower fee) and Client Group 2 (higher fee); each client group offers its own account types, Standard and Pro; and each account type carries its own partner reward scheme — a CPA amount, a rebate share, or both. Individual nodes are highlighted to show that any single module can be swapped or reconfigured on its own without touching the rest." loading="lazy" decoding="async">
-        <img class="shot-img shot-img-dark" src="images/modules-dark.webp"
-             width="2000" height="1360" alt="A partner program broken into configurable modules across four rows: the Custom IB Program at the top branches into Client Group 1 (lower fee) and Client Group 2 (higher fee); each client group offers its own account types, Standard and Pro; and each account type carries its own partner reward scheme — a CPA amount, a rebate share, or both. Individual nodes are highlighted to show that any single module can be swapped or reconfigured on its own without touching the rest." loading="lazy" decoding="async">
-      </div>
-      <figcaption><span class="cap-n">Caption</span>All figures shown are illustrative.</figcaption>
-    </figure>
-
-    <p>The goal: keep every partner happy, and take on any partnership opportunity for the broker — running many customized schemes with many partners at the same time.</p>
-
-    <button class="deep-open" type="button" data-modal="dm-2"
-            aria-label="Read more about this decision — what &quot;dynamic&quot; means in practice">Read more about this decision <span class="arw" aria-hidden="true">&rarr;</span></button>
-
-    <div class="modal" id="dm-2" hidden>
-      <div class="modal-scrim" data-close></div>
-      <div class="modal-panel" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="dm-2-title">
-        <div class="modal-head">
-          <p class="modal-title" id="dm-2-title">What "dynamic" means in practice</p>
-          <button class="modal-x" type="button" data-close aria-label="Close deep dive">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-          </button>
+    <ul class="grid grid-feature">
+      <li class="card">
+        <div class="card-body">
+            <h4>IB Partnership System</h4>
+            <p>Designed and built a scalable partner engine from scratch — dynamic commission schemes, 7-level reward sharing, automated payouts. Grew the channel from 5 to ~517 partners in 6 months.</p>
+            <a class="card-btn" href="partnership-case-study.html">Read case study <span class="arw" aria-hidden="true">&rarr;</span></a>
         </div>
-        <div class="deep-body" tabindex="0">
-          <h4><span class="mark">The setup</span></h4>
-          <p>Winning large partners away from local and international competitors comes down to one thing: how far you can customize their programme. So when I designed this system, I set myself one rule — I should always be able to say yes to a new request, never "sorry, the architecture doesn't allow that."</p>
-          <p>Here's what "dynamic" actually means in practice — a few standalone examples to show how far the customization goes.</p>
-
-          <h5>A. Taking on any scheme a large partner asks for</h5>
-          <p>A large, demanding partner can come to us with a fully custom set of scheme requirements. As long as it's reasonable and safe for the company, we can set it up and launch it in about 30 minutes — no code involved.</p>
-
-          <p><b>The design is modular:</b> Every piece — the scheme, the trading conditions — is built from independent components. That's what makes it possible: when either the broker or the partner wants a change, we swap the component. No code needed. Here's what that looks like:</p>
-
-          <figure>
-            <div class="fig-media shot-frame">
-              <img class="shot-img shot-img-light" src="images/modules-accent-light.webp"
-                   width="2000" height="1360" alt="A partner programme broken into configurable modules across four rows: the Custom IB Program at the top branches into Client Group 1 (lower fee) and Client Group 2 (higher fee); each client group offers its own account types, Standard and Pro; and each account type carries its own partner reward scheme — a CPA amount, a rebate share, or both. Individual nodes are highlighted to show that any single module can be swapped or reconfigured on its own without touching the rest." loading="lazy" decoding="async">
-              <img class="shot-img shot-img-dark" src="images/modules-accent-dark.webp"
-                   width="2000" height="1360" alt="A partner programme broken into configurable modules across four rows: the Custom IB Program at the top branches into Client Group 1 (lower fee) and Client Group 2 (higher fee); each client group offers its own account types, Standard and Pro; and each account type carries its own partner reward scheme — a CPA amount, a rebate share, or both. Individual nodes are highlighted to show that any single module can be swapped or reconfigured on its own without touching the rest." loading="lazy" decoding="async">
-            </div>
-            <figcaption><span class="cap-n">Caption</span>A partner programme, assembled from independent parts: client groups, account types, and reward schemes. Each highlighted piece is dragged into place — swap any one, and the programme changes, no code touched. All figures shown are illustrative.</figcaption>
-          </figure>
-
-          <h5>B. A growth path built for one partner</h5>
-          <p>A large partner willing to commit to specific KPI targets can get a progression path of their own: as they clear each milestone, their reward rates step up — higher rebates and CPA across every client group and account type.</p>
-
-          <p>This runs on the same modular design. Defining a partner's growth path is a configuration, not a build — agreed on and live in about 30 minutes.</p>
-
-          <figure>
-            <div class="fig-media shot-frame">
-              <img class="shot-img shot-img-light" src="images/growth-light.webp"
-                   width="2000" height="1360" alt="A single partner's growth path laid out as a grid. Along the top, a timeline of tiers — Entry Tier, Tier Level 2, and further tiers beyond. Each tier column lists its target KPIs (active traders, total value locked, net deposit) and, below them, the reward rates that tier unlocks for every combination of client group and account type — rebate percentages and CPA amounts, all rising from one tier to the next. Individual cells are highlighted to show that each one is placed by configuration rather than written in code." loading="lazy" decoding="async">
-              <img class="shot-img shot-img-dark" src="images/growth-dark.webp"
-                   width="2000" height="1360" alt="A single partner's growth path laid out as a grid. Along the top, a timeline of tiers — Entry Tier, Tier Level 2, and further tiers beyond. Each tier column lists its target KPIs (active traders, total value locked, net deposit) and, below them, the reward rates that tier unlocks for every combination of client group and account type — rebate percentages and CPA amounts, all rising from one tier to the next. Individual cells are highlighted to show that each one is placed by configuration rather than written in code." loading="lazy" decoding="async">
-            </div>
-            <figcaption><span class="cap-n">Caption</span>One partner's growth path: each tier sets a KPI target, and clearing it lifts the reward rates — rebates and CPA — for every client group and account type. Each highlighted cell is dragged into place; the whole path is assembled, not coded. All figures shown are illustrative.</figcaption>
-          </figure>
-
-          <h5>C. Built to take on more</h5>
-          <p>The system isn't designed to support just a handful of partners. By design, it could serve hundreds — even thousands — of large partners, if the business ever gets there. Each with their own requirements, and the system doesn't break down as that number grows.</p>
-          <figure>
-            <div class="fig-media shot-frame">
-              <img class="shot-img shot-img-light" src="images/multi-light.webp"
-                   width="2000" height="752" alt="A wide field of identical partner programme cards — Custom IB Program 1 through 10 and continuing past the edge of the frame — laid out in three staggered rows, showing many fully separate custom programmes running side by side at the same time." loading="lazy" decoding="async">
-              <img class="shot-img shot-img-dark" src="images/multi-dark.webp"
-                   width="2000" height="752" alt="A wide field of identical partner programme cards — Custom IB Program 1 through 10 and continuing past the edge of the frame — laid out in three staggered rows, showing many fully separate custom programmes running side by side at the same time." loading="lazy" decoding="async">
-            </div>
-            <figcaption><span class="cap-n">Caption</span>Running thousands of different partnerships, still clean and under control.</figcaption>
-          </figure>
+        <div class="card-media">
+          <img src="images/partnership-system.png" alt="Illustration of the partner engine: a partner dashboard with reward balance, referral code and link, a rewards chart and the current partner tier" loading="lazy" decoding="async">
         </div>
-      </div>
+      </li>
+      <li class="card">
+        <div class="card-body">
+            <h4>Trading App &amp; Client Portal</h4>
+            <p>Owned product design for onboarding, KYC, deposits/withdrawals, and live trading, end to end.</p>
+            <!-- TODO: swap for <a class="card-btn" href="..."> once the write-up exists. -->
+            <button type="button" class="card-btn">Read case study <span class="arw" aria-hidden="true">&rarr;</span></button>
+        </div>
+        <div class="card-media">
+          <img src="images/trading-app.png" alt="Illustration of the client portal and trading app: account summary, onboarding and payment navigation, and copyable trade signals" loading="lazy" decoding="async">
+        </div>
+      </li>
+      <li class="card">
+        <div class="card-body">
+            <h4>CRM &amp; Back Office Rebuild</h4>
+            <p>Rebuilt the core data schema and migrated the entire client base (~18k clients, ~1,600 live positions) with zero downtime — in ~3.5 months with a 4-person team.</p>
+            <!-- TODO: swap for <a class="card-btn" href="..."> once the write-up exists. -->
+            <button type="button" class="card-btn">Read case study <span class="arw" aria-hidden="true">&rarr;</span></button>
+        </div>
+        <div class="card-media">
+          <img src="images/back-office.png" alt="Illustration of the back office: a table of client trading accounts showing account type, balance, floating P&amp;L and leverage, with bulk actions" loading="lazy" decoding="async">
+        </div>
+      </li>
+      <li class="card">
+        <div class="card-body">
+            <h4>Data &amp; BI Platform</h4>
+            <p>Designed and built an AI-powered decision-intelligence platform, unifying ~12 data sources, 100+ metrics, and 30+ dashboards into one self-service ecosystem.</p>
+            <!-- TODO: swap for <a class="card-btn" href="..."> once the write-up exists. -->
+            <button type="button" class="card-btn">Read case study <span class="arw" aria-hidden="true">&rarr;</span></button>
+        </div>
+        <div class="card-media">
+          <img src="images/business-intelligence.png" alt="Illustration of the BI platform: client-count metrics, a cohort table, a retention curve and a conversion funnel" loading="lazy" decoding="async">
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- ============ ECOSYSTEM MAP ============ -->
+  <section class="band" data-theme="dark" aria-labelledby="eco-title">
+    <div class="wrap section">
+      <div class="sec"><h2 id="eco-title">One connected system, not a pile of features.</h2></div>
+      <p class="measure">Each module below solved a real operational problem. Built to work together — a client group defined once flows through partnerships, back office, and reporting without rework. This is the map of what I built.</p>
+
+      <video class="eco eco-wide" src="videos/ecosystem-wide.webm"
+             autoplay loop muted playsinline preload="none"
+             aria-label="Animated map of the brokerage system, showing how the modules connect"></video>
+      <video class="eco eco-tall" src="videos/ecosystem-tall.webm"
+             autoplay loop muted playsinline preload="none"
+             aria-label="Animated map of the brokerage system, showing how the modules connect"></video>
     </div>
   </section>
 
-  <section class="dbox">
-    <h3 class="dbox-title">The rest of the system</h3>
-    <p>The other major capabilities that keep the system running, grouped by area.</p>
+  <!-- ============ WORK ============ -->
+  <section class="wrap section" aria-labelledby="work-title">
+    <div class="sec"><h2 id="work-title">Other work.</h2></div>
 
-    <ul class="mod-list">
-      <li>
-        <span class="mod-name">Partner Management</span>
-        <span class="mod-items">managing partners by attribute group, managing per-partner attributes, tracking and sharing rewards across a 7-level partner relationship</span>
+    <h3 class="sub">Platform &amp; Infrastructure</h3>
+    <ul class="strip" tabindex="0" aria-label="Platform and infrastructure modules">
+      <li class="card">
+        <div class="card-media">
+          <img src="images/client-portal.png" alt="Illustration of payments and onboarding: a client portal with deposit, withdrawal and document-submission steps" loading="lazy" decoding="async">
+        </div>
+        <div class="card-text">
+          <h4>Payment &amp; KYC</h4>
+          <p>Delivered 6 payment integrations with real-time processing and streamlined KYC-to-first-deposit onboarding — raising automation from ~46% to ~84%.</p>
+        </div>
       </li>
-      <li>
-        <span class="mod-name">Scheme Management</span>
-        <span class="mod-items">Scheme Builder, Scheme Management Module, Scheme Calculation Scheduler</span>
-      </li>
-      <li>
-        <span class="mod-name">Reward Payment</span>
-        <span class="mod-items">Partner Wallet, Reward Credit, Reward Withdrawal, Internal Transfer</span>
-      </li>
-      <li>
-        <span class="mod-name">Partner Growth</span>
-        <span class="mod-items">Tier Auto Upgrade / Downgrade</span>
-      </li>
-      <li>
-        <span class="mod-name">Fraud Prevention</span>
-        <span class="mod-items">Self-Referral Detection</span>
-      </li>
-      <li>
-        <span class="mod-name">Partner Area UI</span>
-        <span class="mod-items">Partner Dashboard, Mini CRM to manage clients, Marketing Hub, Payment Functions, Reward &amp; Client Reporting</span>
+      <li class="card">
+        <div class="card-media">
+          <img src="images/mt5.png" alt="Illustration of the MetaTrader 5 link: a live candlestick chart on a phone with buy and sell controls and account equity" loading="lazy" decoding="async">
+        </div>
+        <div class="card-text">
+          <h4>MT5 Integration</h4>
+          <p>Connected the CRM to MetaTrader 5 for real-time execution and account sync.</p>
+        </div>
       </li>
     </ul>
 
-    <figure>
-      <div class="fig-media shot-frame">
-        <img class="shot-img shot-img-light" src="images/system-light.webp"
-             width="2000" height="1554" alt="A map of the whole partnership system. A Partner Manager layer runs from Director or CEO down to Manager or Department Head, who oversees mistake control, fraud prevention and reports. Below it a Backend layer holds attribute management, partner groups, scheme management, and scheme calculation with revenue protection and payroll, plus A/B book and ceiling controls, payroll approval, tier up- and down-grade, relationship management with sub-levels, and client cashback. On the left a Partner Area gives partners referral codes and links, account and payment, partner tier, marketing material, reports, client cashback, a loyalty programme and a mini CRM. Arrows show partners and clients moving between the three layers." loading="lazy" decoding="async">
-        <img class="shot-img shot-img-dark" src="images/system-dark.webp"
-             width="2000" height="1554" alt="A map of the whole partnership system. A Partner Manager layer runs from Director or CEO down to Manager or Department Head, who oversees mistake control, fraud prevention and reports. Below it a Backend layer holds attribute management, partner groups, scheme management, and scheme calculation with revenue protection and payroll, plus A/B book and ceiling controls, payroll approval, tier up- and down-grade, relationship management with sub-levels, and client cashback. On the left a Partner Area gives partners referral codes and links, account and payment, partner tier, marketing material, reports, client cashback, a loyalty programme and a mini CRM. Arrows show partners and clients moving between the three layers." loading="lazy" decoding="async">
-      </div>
-    </figure>
+    <h3 class="sub">Intelligence &amp; Growth</h3>
+    <ul class="strip" tabindex="0" aria-label="Intelligence and growth modules">
+      <li class="card">
+        <div class="card-media">
+          <img src="images/smart-crm.png" alt="Illustration of the sales CRM: a client conversation log with an appointment field and an active call" loading="lazy" decoding="async">
+        </div>
+        <div class="card-text">
+          <h4>Sales CRM Intelligence</h4>
+          <p>Built an in-house CRM with real-time customer intelligence for the sales floor, cutting first-deposit follow-up from ~13h to ~1.5h.</p>
+        </div>
+      </li>
+      <li class="card">
+        <div class="card-media">
+          <img src="images/smart-insight.png" alt="Illustration of the AI insight layer: an assistant summarising a client&rsquo;s trading day beside a chart of profit by symbol" loading="lazy" decoding="async">
+        </div>
+        <div class="card-text">
+          <h4>Smart Insight (AI)</h4>
+          <p>Built AI-powered trading insights for clients and behavior analytics for the internal team.</p>
+        </div>
+      </li>
+      <li class="card">
+        <div class="card-media">
+          <img src="images/premium-program.png" alt="Illustration of the premium program: a tier ladder marking where a high-value client sits on the scale" loading="lazy" decoding="async">
+        </div>
+        <div class="card-text">
+          <h4>Premium Program</h4>
+          <p>Launched the first premium tier for high-value traders, with segmentation, loyalty, and AI trading insights.</p>
+        </div>
+      </li>
+    </ul>
+
+    <h3 class="sub">Growth &amp; MarTech</h3>
+    <ul class="strip" tabindex="0" aria-label="Growth and marketing technology modules">
+      <li class="card">
+        <div class="card-media">
+          <img src="images/marketing-automation.png" alt="Illustration of a lifecycle flow: event trigger, enter flow, first message, a timed wait, second message, then exit" loading="lazy" decoding="async">
+        </div>
+        <div class="card-text">
+          <h4>Marketing Automation</h4>
+          <p>Built lifecycle messaging across triggered and event-based flows.</p>
+        </div>
+      </li>
+      <li class="card">
+        <div class="card-media">
+          <img src="images/tracking-measurment.png" alt="Illustration of attribution: Meta, Google Ads and TikTok sources feeding into a single attribution point" loading="lazy" decoding="async">
+        </div>
+        <div class="card-text">
+          <h4>Tracking &amp; Attribution</h4>
+          <p>Built tracking and attribution pipelines across web, app, and ad platforms — web-to-app attribution and event-level data.</p>
+        </div>
+      </li>
+      <li class="card">
+        <div class="card-media">
+          <img src="images/a-b-testing.png" alt="Illustration of an experiment: users split into A and B test groups, with a results table marking the winning variant" loading="lazy" decoding="async">
+        </div>
+        <div class="card-text">
+          <h4>A/B Testing</h4>
+          <p>Ran experiments across onboarding, promotions, and UI to lift activation and conversion.</p>
+        </div>
+      </li>
+      <li class="card">
+        <div class="card-media">
+          <img src="images/promotion-engine.png" alt="Illustration of the promotion engine: a configurable prize wheel with jackpot, multiplier and lose segments" loading="lazy" decoding="async">
+        </div>
+        <div class="card-text">
+          <h4>Promotion Engine</h4>
+          <p>Built a rule-based bonus and campaign engine, configurable without code.</p>
+        </div>
+      </li>
+      <li class="card">
+        <div class="card-media">
+          <img src="images/growth-features.png" alt="Illustration of the growth mechanics: a referral badge representing a group of invited clients" loading="lazy" decoding="async">
+        </div>
+        <div class="card-text">
+          <h4>Growth Features</h4>
+          <p>Built acquisition and engagement mechanics that scale without manual work.</p>
+        </div>
+      </li>
+    </ul>
   </section>
 
-  <!-- ============ 04 ============ -->
-  <div class="sec">
-    <h2>How we worked</h2>
-  </div>
+  <!-- ============ ABOUT ============ -->
+  <section class="wrap section" aria-labelledby="about-title">
+    <div class="about-box">
+    <div class="sec"><h2 id="about-title">From marketing to data to product.</h2></div>
+    <p class="measure">I started in growth marketing, moved into business intelligence, and grew into product and platform architecture — each layer built on the last. Over 7+ years across FX/CFD brokerages, I've gone from running acquisition campaigns, to rebuilding a company's entire analytics function, to architecting trading platforms from the ground up. That path is why I design systems the way I do: business goals first, data as the backbone, product as the outcome.</p>
 
-  <p>Over 6 months, with 1 PM and 4 engineers, we delivered the entire system — including rebuilding the CRM and Back Office data schema from the ground up, all while running other projects in parallel.</p>
-
-  <p class="pull">Our developers were based in China and didn't speak English, so we worked Zero-Meeting: I owned architecture, backend logic, API, front-end design, spec, and QA myself — so when work reached them, they could just code, with little to no need to ask questions.</p>
-
-  <!-- ============ 05 ============ -->
-  <div class="sec">
-    <h2>The system in practice</h2>
-  </div>
-
-  <h3 class="sub">Partner Area UI</h3>
-
-  <p>The Partner Area focuses on what partners actually need: a Mini CRM to manage their own clients, and visibility into how their rewards are calculated and paid. The goal was trust — partners can see the logic, not just the result.</p>
-
-    <figure>
-    <div class="fig-media shot-frame">
-      <img class="shot-img shot-img-light" src="images/partner-area-light.webp"
-           width="2000" height="1586" alt="Three phone screens side by side. Home Dashboard: revenue with a withdraw action, referral tools with a copyable link and code, and a reward-performance panel. Mini CRM: a client list where each client shows an ID, a status badge such as acquisition in progress or active trader, current status and next target, plus lifetime deposit, withdrawal and live trading figures. Funnel Overview: counts for leads, KYC clients, first-time-deposit clients, traded clients, recently active clients and premium clients." loading="lazy" decoding="async">
-      <img class="shot-img shot-img-dark" src="images/partner-area-dark.webp"
-           width="2000" height="1586" alt="Three phone screens side by side. Home Dashboard: revenue with a withdraw action, referral tools with a copyable link and code, and a reward-performance panel. Mini CRM: a client list where each client shows an ID, a status badge such as acquisition in progress or active trader, current status and next target, plus lifetime deposit, withdrawal and live trading figures. Funnel Overview: counts for leads, KYC clients, first-time-deposit clients, traded clients, recently active clients and premium clients." loading="lazy" decoding="async">
+    <ol class="timeline">
+      <li>
+        <span class="tl-year">2019</span>
+        <div><span class="tl-role">Social Media Specialist &middot; Vietnamese market</span><span class="tl-org">Exness Group</span></div>
+      </li>
+      <li>
+        <span class="tl-year">2021</span>
+        <div><span class="tl-role">Digital Marketing Manager</span><span class="tl-org">HSB Investasi</span></div>
+      </li>
+      <li>
+        <span class="tl-year">2022</span>
+        <div><span class="tl-role">Head of Business Intelligence</span><span class="tl-org">Markets.com</span></div>
+      </li>
+      <li>
+        <span class="tl-year">2024 &ndash; now</span>
+        <div><span class="tl-role">Head of Product &amp; Platform Architect</span><span class="tl-org">HSB Investasi</span></div>
+      </li>
+    </ol>
     </div>
-    <figcaption><span class="cap-n">Caption</span>The partner's home: earnings and referral tools at a glance, plus a Mini CRM to track each client's status — from lead to KYC to first deposit — like a sales pipeline of their own.</figcaption>
-  </figure>
+  </section>
 
-  <figure>
-    <div class="fig-media shot-frame">
-      <img class="shot-img shot-img-light" src="images/reward-detail-light.webp"
-           width="2000" height="1324" alt="A single wide screen titled Reward details, showing one reward broken into three steps. Step 1 calculates client performance over a dated window from deposit amount and trading volume. Step 2 maps those two KPIs onto a range table to produce an original reward. Step 3 splits that reward across seven partner levels by percentage, with the viewing partner marked at level 1. A summary bar at the bottom states the partner's own share." loading="lazy" decoding="async">
-      <img class="shot-img shot-img-dark" src="images/reward-detail-dark.webp"
-           width="2000" height="1324" alt="A single wide screen titled Reward details, showing one reward broken into three steps. Step 1 calculates client performance over a dated window from deposit amount and trading volume. Step 2 maps those two KPIs onto a range table to produce an original reward. Step 3 splits that reward across seven partner levels by percentage, with the viewing partner marked at level 1. A summary bar at the bottom states the partner's own share." loading="lazy" decoding="async">
+  <!-- ============ PHILOSOPHY ============ -->
+  <section class="wrap section" aria-labelledby="how-title">
+    <div class="sec"><h2 id="how-title">How I work.</h2></div>
+    <ul class="principles">
+      <li>
+        <span class="p-name">System thinking before feature thinking</span>
+        <span class="p-body">I design flows, data architecture, and interconnections first; features are the outcome of a system that's right underneath.</span>
+      </li>
+      <li>
+        <span class="p-name">Ship fast, stay flexible</span>
+        <span class="p-body">Speed is a product strength. I build modular so I can pivot and expand without breaking what's live.</span>
+      </li>
+      <li>
+        <span class="p-name">Business first, technology follows</span>
+        <span class="p-body">Technology serves real business goals and workflows, never the reverse.</span>
+      </li>
+      <li>
+        <span class="p-name">Built to delight users</span>
+        <span class="p-body">Operational UX matters. Interfaces should lighten the work, not add to it.</span>
+      </li>
+    </ul>
+  </section>
+
+  <!-- ============ TEAM ============ -->
+  <section class="wrap section" aria-labelledby="team-title">
+    <div class="sec"><h2 id="team-title">The team I led.</h2></div>
+    <p class="measure">I worked hands-on with a small engineering team — backend, frontend, mobile, analytics — often across a language barrier and time zones. I owned architecture, spec, design, and QA end to end, so when work reached them, they could just build.</p>
+
+    <ul class="team">
+      <li><figure>
+        <img src="images/super.png" alt="Super Chen" loading="lazy" decoding="async">
+        <figcaption><span class="t-role">Backend Developer</span><span class="t-name">Super Chen</span></figcaption>
+      </figure></li>
+      <li><figure>
+        <img src="images/bingo.png" alt="Bingo Liu" loading="lazy" decoding="async">
+        <figcaption><span class="t-role">Frontend Developer</span><span class="t-name">Bingo Liu</span></figcaption>
+      </figure></li>
+      <li><figure>
+        <img src="images/huong.png" alt="Huong Doan" loading="lazy" decoding="async">
+        <figcaption><span class="t-role">Mobile Developer</span><span class="t-name">Huong Doan</span></figcaption>
+      </figure></li>
+      <li><figure>
+        <img src="images/cio.png" alt="Cio Tam" loading="lazy" decoding="async">
+        <figcaption><span class="t-role">Product Manager</span><span class="t-name">Cio Tam</span></figcaption>
+      </figure></li>
+      <li><figure>
+        <img src="images/thong.png" alt="Thong Nguyen" loading="lazy" decoding="async">
+        <figcaption><span class="t-role">Frontend Developer</span><span class="t-name">Thong Nguyen</span></figcaption>
+      </figure></li>
+      <li><figure>
+        <img src="images/manh.png" alt="Manh Tran" loading="lazy" decoding="async">
+        <figcaption><span class="t-role">Analytics Engineering</span><span class="t-name">Manh Tran</span></figcaption>
+      </figure></li>
+    </ul>
+  </section>
+
+  <!-- ============ CONTACT ============ -->
+  <section class="contact-band" data-theme="dark" aria-labelledby="contact-title">
+    <video class="contact-bg" src="videos/contact-bg.webm"
+           autoplay loop muted playsinline preload="none" aria-hidden="true"></video>
+    <div class="wrap section">
+    <div class="burst">
+      <h2 id="contact-title">Building brokerage infrastructure, or hiring someone who has?</h2>
+      <p>I work on the systems behind FX/CFD brokerages — from trading stacks, CRM, and partnerships to BI, AI, and the data underneath. The parts that don't show, but decide everything.</p>
+      <a class="btn" href="mailto:nndao96@gmail.com">Get in touch <span aria-hidden="true">&rarr;</span></a>
+      <p class="burst-contact"><a href="mailto:nndao96@gmail.com">nndao96@gmail.com</a> &middot; <a href="tel:+84977968586">+84 977 968586</a></p>
     </div>
-    <figcaption><span class="cap-n">Caption</span>How a single reward is calculated, shown step by step: the client's performance, the reward it maps to, and how it's split across partner levels. Partners see the full logic, not just the final number.</figcaption>
-  </figure>
-
-  <h3 class="sub">Scheme Builder Form</h3>
-
-  <p>There are three builder forms, one for each scheme type. Each one offers a set of KPI metrics and reward types to choose from, and lets a CRM user configure payout rates per partner tier. Every form includes inline guidance at each step, so users can't misconfigure a scheme without understanding what they're setting.</p>
-
-  <p>I designed each form to walk through the full calculation logic — the trigger event, the KPI measurement window, the reward tiers, and how the reward splits across up to seven partner levels. What I was really after was control: I wanted the payout logic powerful enough to handle the hardest requests a partner could throw at us, and precise enough to trust. And this is just one scheme type — I built the system to support several.</p>
-
-  <figure>
-    <div class="fig-media shot-frame">
-      <!-- one artwork for both themes, by design: this screenshot is shared. -->
-      <img class="shot-img" src="images/scheme-builder.webp"
-           width="2000" height="1872" alt="The Scheme Builder form laid out as four configuration steps. Step 1 sets the trigger event and the measurement window, with a timeline diagram showing the window opening at the trigger and closing after a set number of days. Step 2 chooses how many KPIs to measure and configures each one, including minimum position hold and which symbols or symbol groups to include. Step 3 sets the scheme tiers — a table mapping ranges of both KPIs to a reward amount — and the operator between them. Step 4 sets reward sharing, distributing the original reward across partner levels one to seven by percentage. Each step carries its own diagram and inline explanation." loading="lazy" decoding="async">
     </div>
-    <figcaption><span class="cap-n">Caption</span>I built this as a four-step form: set the trigger event and measurement window, choose the KPIs, map performance to reward tiers, then split the reward across up to seven partner levels. I paired every step with a diagram and inline guidance, so whoever configures it always sees the logic they're setting. Figures are illustrative.</figcaption>
-  </figure>
+  </section>
 
-  <h3 class="sub">Growth Path Form (Tier Up / Down)</h3>
+</main>
 
-  <p>The Growth Path Form makes tier upgrade and downgrade logic visible and editable directly — the conditions for promoting or demoting a partner aren't buried in code. Multiple partner programmes, each with their own tier logic, can run side by side without conflict.</p>
-
-  <figure>
-    <div class="fig-media shot-frame">
-      <!-- one artwork for both themes, by design: this screenshot is shared. -->
-      <img class="shot-img" src="images/growth-path-form.webp"
-           width="2000" height="1873" alt="The Growth Path form for a partner tier chain. A basics panel sets the chain name, whether it is enabled and how often it runs; a marketing panel sets the name and description partners see. Below, a row of tiers runs left to right, each one picking a partner group. Every tier carries an upgrade condition block tinted green and, from the second tier on, a downgrade block tinted red. Each block is built from KPI rules — trading volume, KYC count, active traders, profit — joined by AND and OR, with controls to add a single condition or a whole condition group, and a JSON preview." loading="lazy" decoding="async">
-    </div>
-    <figcaption><span class="cap-n">Caption</span>The form where I made tier logic visible and editable: each tier in a partner's growth path has its own upgrade conditions (green) and downgrade conditions (red), built from KPI rules instead of buried in code. Chains run independently, so many partner programmes can have their own tier logic side by side. Figures are illustrative.</figcaption>
-  </figure>
-
-      <h3 class="sub">Fraud Prevention Engine</h3>
-
-  <p>Fraud prevention runs on weekly scoring across device, network, and attribution signals, rolling up into a partner-level risk rate. Each case shows a plain-language explanation and a confidence band, with three graduated actions &mdash; blacklist the partner, blacklist the flagged clients only, or clear it.</p>
-
-<!-- ============ 06 ============ -->
-  <div class="sec">
-    <h2>The impact</h2>
-  </div>
-
-  <p>Six months after launch, the system — together with the Business Development team's work — had driven significant growth, opening a kind of opportunity the broker had never had before.</p>
-
-  <div class="stat-rail">
-    <div class="figures">
-      <div><span class="f-num">5<span class="arrow">→</span>517</span><span class="f-lab">Partners</span></div>
-      <div><span class="f-num">6.0%<span class="arrow">→</span>11.8%</span><span class="f-lab">Share of new funded clients, monthly avg</span></div>
-      <div><span class="f-num">9.4%<span class="arrow">→</span>16.3%</span><span class="f-lab">Deposit share</span></div>
-      <div><span class="f-num">~2,000</span><span class="f-lab">Closed deals / day</span></div>
-    </div>
-  </div>
-
-  <p>Payout reconciliation went from 5 person-days a month to automated 30-minute cycles.</p>
-
-  <figure>
-    <div class="fig-media plain">
-      <svg class="chart" viewBox="0 0 640 158" fill="none" aria-hidden="true">
-        <line x1="0" y1="108" x2="640" y2="108" class="dg-line" stroke-width="1" stroke-dasharray="4 4"/>
-        <text x="636" y="102" text-anchor="end" class="dg-t2" font-size="9">pre-launch baseline</text>
-        <!-- month 0 = launch. Scale: y = 112 - (value - 5.5) * 8, so 6.0% sits
-             exactly on the dashed baseline and every point encodes linearly. -->
-        <polyline points="20,108 105,92 190,61.6 275,78.4 360,34.4 445,40 530,76.8 615,50.4"
-          class="dg-line-ink" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-        <g class="dg-fill-ink">
-          <circle cx="105" cy="92" r="3.4"/>
-          <circle cx="190" cy="61.6" r="3.4"/>
-          <circle cx="275" cy="78.4" r="3.4"/>
-          <circle cx="360" cy="34.4" r="3.4"/>
-          <circle cx="445" cy="40" r="3.4"/>
-          <circle cx="530" cy="76.8" r="3.4"/>
-          <circle cx="615" cy="50.4" r="3.4"/>
-        </g>
-        <circle cx="20" cy="108" r="4.6" class="dg-ring" stroke-width="1.8"/>
-        <g class="dg-t" font-size="9">
-          <text x="20" y="96" text-anchor="middle">6.0%</text>
-          <text x="105" y="80" text-anchor="middle">8.0%</text>
-          <text x="190" y="49.6" text-anchor="middle">11.8%</text>
-          <text x="275" y="66.4" text-anchor="middle">9.7%</text>
-          <text x="360" y="22.4" text-anchor="middle">15.2%</text>
-          <text x="445" y="28" text-anchor="middle">14.5%</text>
-          <text x="530" y="64.8" text-anchor="middle">9.9%</text>
-          <text x="615" y="38.4" text-anchor="middle">13.2%</text>
-        </g>
-        <g class="dg-t2" font-size="10">
-          <text x="20" y="134" text-anchor="middle">0</text>
-          <text x="105" y="134" text-anchor="middle">1</text>
-          <text x="190" y="134" text-anchor="middle">2</text>
-          <text x="275" y="134" text-anchor="middle">3</text>
-          <text x="360" y="134" text-anchor="middle">4</text>
-          <text x="445" y="134" text-anchor="middle">5</text>
-          <text x="530" y="134" text-anchor="middle">6</text>
-          <text x="615" y="134" text-anchor="middle">7</text>
-        </g>
-        <text x="20" y="150" text-anchor="middle" class="dg-t2" font-size="9">launch</text>
-      </svg>
-    </div>
-    <figcaption><span class="cap-n">Caption</span>Partner-attributed share of new funded clients, by month since launch — climbing from a 6.0% pre-launch baseline to a 15.2% peak in month 4.</figcaption>
-  </figure>
-
-  <p>The distribution is a long tail: most partners refer just a handful of clients each, a smaller group brings in dozens, and only a few bring in more. The channel's strength comes from the breadth of many small partners, not a few large ones.</p>
-
-  <figure>
-    <div class="fig-media plain">
-      <div class="lt-bars">
-        <div class="lt-bar-wrap"><div class="lt-bar" style="height:100%"></div></div>
-        <div class="lt-bar-wrap"><div class="lt-bar" style="height:19%"></div></div>
-        <div class="lt-bar-wrap"><div class="lt-bar" style="height:10%"></div></div>
-        <div class="lt-bar-wrap"><div class="lt-bar" style="height:3%"></div></div>
-      </div>
-      <div class="lt-labels">
-        <span>1–3 clients</span><span>4–9 clients</span><span>10–99 clients</span><span>100+ clients</span>
-      </div>
-    </div>
-    <figcaption><span class="cap-n">Caption</span>Partner distribution — referrals per partner. The channel is carried by volume of small partners, not a handful of large ones.</figcaption>
-  </figure>
-
-  <!-- ============ CLOSING ============ -->
-  <div class="burst">
-    <p class="b-kicker">Contact</p>
-    <h2>Building partner infrastructure, or hiring someone who has?</h2>
-    <p>I work on the systems behind FX/CFD brokerages — commission engines, CRM, back office, the parts that don't show but decide everything.</p>
-    <a class="btn" href="mailto:nndao96@gmail.com">Get in touch <span aria-hidden="true">→</span></a>
-  </div>
-
-  <footer>
-    <p>Partnership System — Case Study · 2026</p>
-  </footer>
-
-</article>
-
-<aside class="disclosure" id="disclosure" aria-labelledby="disclosure-title">
-  <div class="disclosure-text">
-    <p class="disclosure-title" id="disclosure-title">A note on confidentiality</p>
-    <p>All company names, client data, and figures here are anonymized or illustrative. The mechanisms shown are standard industry practice &mdash; nothing confidential is disclosed.</p>
-  </div>
-  <button class="disclosure-x" type="button" aria-label="Dismiss this notice">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
-  </button>
-</aside>
+<footer class="wrap">
+  <p>Nemo Dao — Product &amp; Systems · 2026</p>
+</footer>
 
 <script>
   (function(){
@@ -1720,238 +1667,127 @@ footer p{
     });
   })();
 
-  /* ---- stat rail: edge fades, plus a slow continuous marquee on mobile ----
-         The fade state must be set here because CSS cannot tell whether a
-         scroller has further to go. The marquee duplicates the stats and
-         drifts the track by exactly one copy, so the wrap is invisible. It
-         never runs on desktop and never when the OS asks for reduced motion.
-         ---- */
+  /* Reveal the top bar once the hero is 60% behind us.
+     IntersectionObserver rather than a scroll handler: the callback fires only
+     at the crossing instead of on every frame of every scroll, and it needs no
+     rAF throttle to stay off the main thread.
+     isIntersecting alone is not enough — the sentinel is also "not
+     intersecting" while it sits BELOW the viewport, which is its state on load.
+     boundingClientRect.top < 0 is what distinguishes scrolled-past from
+     not-yet-reached. */
   (function(){
-    var mayAnimate = window.matchMedia('(prefers-reduced-motion: no-preference)').matches;
-    var narrow = window.matchMedia('(max-width:720px)');
-    var SPEED = 20;            /* px per second — calm enough to read while it drifts */
+    var bar = document.getElementById('topbar');
+    var mark = document.getElementById('heroSentinel');
+    if (!bar || !mark) return;
 
-    [].slice.call(document.querySelectorAll('.stat-rail')).forEach(function(rail){
-      var s=rail.querySelector('.figures');
-      if(!s) return;
+    function set(on){ bar.classList.toggle('is-visible', on); }
 
-      /* Wrap the stats in a track. Layout-neutral on desktop (display:contents). */
-      var track=document.createElement('div');
-      track.className='rail-track';
-      while(s.firstChild) track.appendChild(s.firstChild);
-      s.appendChild(track);
-      var originals=[].slice.call(track.children);
+    if (!('IntersectionObserver' in window)) {
+      /* Pre-2019 Safari and friends: fall back to reading the mark's position
+         directly. Same test, just paid for on every scroll event. */
+      var onScroll = function(){ set(mark.getBoundingClientRect().top < 0); };
+      window.addEventListener('scroll', onScroll, {passive:true});
+      onScroll();
+      return;
+    }
 
-      function sync(){
-        var max=s.scrollWidth-s.clientWidth;
-        rail.classList.toggle('scrollable', max>1);
-        rail.classList.toggle('at-start', s.scrollLeft<=1);
-        rail.classList.toggle('at-end', s.scrollLeft>=max-1);
+    new IntersectionObserver(function(entries){
+      var e = entries[entries.length - 1];
+      set(!e.isIntersecting && e.boundingClientRect.top < 0);
+    }, {threshold:0}).observe(mark);
+  })();
+
+  /* The "Other work" strips: edge fade + drag-to-scroll.
+     Trackpad and touch already scroll these natively; overscroll-behavior-x in
+     the stylesheet is what stops that gesture turning into browser back/forward
+     at the ends. This adds the two things CSS cannot do on its own. */
+  (function(){
+    var strips = document.querySelectorAll('.strip');
+    if (!strips.length) return;
+
+    Array.prototype.forEach.call(strips, function(s){
+
+      /* --- edge fade: only on a side that actually hides something --- */
+      function paint(){
+        var max = s.scrollWidth - s.clientWidth;
+        /* 1px of slack: scrollLeft is fractional on HiDPI and never lands
+           exactly on max, so a strict compare leaves the right fade stuck on. */
+        s.classList.toggle('fade-l', s.scrollLeft > 1);
+        s.classList.toggle('fade-r', s.scrollLeft < max - 1);
       }
-      s.addEventListener('scroll', sync, {passive:true});
-      window.addEventListener('resize', sync, {passive:true});
-      sync();
+      s.addEventListener('scroll', paint, {passive:true});
+      window.addEventListener('resize', paint, {passive:true});
+      paint();
 
-      if(!mayAnimate) return;
+      /* --- drag to scroll --- */
+      var down = false, startX = 0, startLeft = 0, moved = 0, id = null;
 
-      var clones=[], running=false, surrendered=false;
-
-      function start(){
-        if(running || surrendered || !narrow.matches) return;
-        var copy=track.getBoundingClientRect().width;
-        if(copy<=s.clientWidth) return;      /* nothing to drift past */
-        originals.forEach(function(it){
-          var c=it.cloneNode(true);
-          c.setAttribute('aria-hidden','true');   /* the copy is visual only */
-          track.appendChild(c); clones.push(c);
-        });
-        var gap=parseFloat(getComputedStyle(track).columnGap)||0;
-        rail.style.setProperty('--rail-dur', ((copy+gap)/SPEED).toFixed(1)+'s');
-        rail.classList.add('drifting');
-        running=true;
-      }
-
-      function teardown(){
-        rail.classList.remove('drifting');
-        clones.forEach(function(c){ c.parentNode && c.parentNode.removeChild(c); });
-        clones=[];
-        running=false;
-      }
-
-      /* Real input hands control over permanently — pointer/touch/wheel only
-         ever come from the reader, whereas a scroll event cannot tell us who
-         caused it. Freeze where the drift had reached, then hand back a
-         plain native-scrolling row. */
-      function surrender(){
-        if(surrendered) return;
-        surrendered=true;
-        var travelled=0, m=getComputedStyle(track).transform;
-        if(m && m!=='none'){
-          var parts=/matrix\(([^)]+)\)/.exec(m);
-          if(parts) travelled=-parseFloat(parts[1].split(',')[4]);
-        }
-        teardown();
-        track.style.transform='none';
-        var max=s.scrollWidth-s.clientWidth;
-        s.scrollLeft=Math.max(0, Math.min(max, travelled));
-        sync();
-      }
-      ['pointerdown','touchstart','wheel'].forEach(function(ev){
-        s.addEventListener(ev, surrender, {passive:true});
+      s.addEventListener('pointerdown', function(e){
+        /* Mouse and pen only. Touch already scrolls natively, and capturing it
+           here would replace momentum scrolling with a worse copy of it. */
+        if (e.pointerType === 'touch') return;
+        down = true; moved = 0; id = e.pointerId;
+        startX = e.clientX; startLeft = s.scrollLeft;
+        s.classList.add('dragging');
+        s.setPointerCapture(id);
       });
 
-      start();
-      function onBreakpoint(){
-        if(surrendered) return;
-        if(narrow.matches){ start(); } else { teardown(); }
+      s.addEventListener('pointermove', function(e){
+        if (!down) return;
+        var dx = e.clientX - startX;
+        if (Math.abs(dx) > moved) moved = Math.abs(dx);
+        s.scrollLeft = startLeft - dx;
+        /* Called directly rather than waiting on the scroll event: that event is
+           dispatched asynchronously, so the fade would trail a frame behind the
+           pointer through the whole drag. */
+        paint();
+        e.preventDefault();
+      });
+
+      function release(e){
+        if (!down) return;
+        down = false;
+        s.classList.remove('dragging');
+        try { s.releasePointerCapture(id); } catch(err){}
       }
-      if(narrow.addEventListener) narrow.addEventListener('change', onBreakpoint);
-      window.addEventListener('resize', onBreakpoint, {passive:true});
+      s.addEventListener('pointerup', release);
+      s.addEventListener('pointercancel', release);
+
+      /* A drag that ends over a link would otherwise fire its click. Captured on
+         the way down so it is suppressed before the target ever sees it. The
+         5px floor keeps an ordinary click — which always jitters a pixel or
+         two — working normally. */
+      s.addEventListener('click', function(e){
+        if (moved > 5){ e.preventDefault(); e.stopPropagation(); }
+      }, true);
     });
   })();
 
-  /* ---- deep-dive modals ----
-         Each trigger names its dialog by id. The dialog markup already sits
-         next to its trigger in the source, so the reading order and the
-         no-JS document order both stay intact; opening only unhides it.
-         Nothing between here and the root creates a stacking or containing
-         block, so position:fixed still resolves against the viewport. ---- */
+  /* The icon-grid webm runs behind both the hero and the contact band, and its
+     own cadence is quicker than the page wants. 0.625 stretches the 11s loop to
+     ~17.6s — the reciprocal of 1.6, so it plays 160% slower.
+     defaultPlaybackRate as well as playbackRate: the former is what a fresh
+     load or a source change falls back to, so without it the rate resets the
+     first time the element reloads. Reapplied on loadedmetadata for the same
+     reason — preload="none" means the metadata arrives well after this runs. */
   (function(){
-    var open=null, opener=null;
-    var FOCUSABLE='a[href],button:not([disabled]),input,select,textarea,[tabindex]:not([tabindex="-1"])';
-
-    function lock(on){
-      if(on){
-        /* Compensate for the scrollbar we are about to remove, or the whole
-           page jumps sideways the instant a dialog opens. */
-        var pad=window.innerWidth-document.documentElement.clientWidth;
-        document.body.style.overflow='hidden';
-        if(pad>0) document.body.style.paddingRight=pad+'px';
-      }else{
-        document.body.style.overflow='';
-        document.body.style.paddingRight='';
-      }
-    }
-
-    function show(modal, from){
-      if(open) hide();
-      open=modal; opener=from;
-      modal.hidden=false;
-      lock(true);
-      var panel=modal.querySelector('.modal-panel');
-      if(panel) panel.focus();
-    }
-
-    function hide(){
-      if(!open) return;
-      /* Reset the scroll BEFORE hiding: a display:none element has no scroll
-         box, so the assignment would be dropped and the old offset restored
-         on reopen. A dialog that reopens mid-article is disorienting. */
-      var body=open.querySelector('.deep-body');
-      if(body) body.scrollTop=0;
-      open.hidden=true;
-      open=null;
-      lock(false);
-      if(opener) opener.focus();
-      opener=null;
-    }
-
-    [].slice.call(document.querySelectorAll('.deep-open')).forEach(function(btn){
-      var modal=document.getElementById(btn.getAttribute('data-modal'));
-      if(!modal) return;
-      btn.addEventListener('click', function(){ show(modal, btn); });
-    });
-
-    document.addEventListener('click', function(e){
-      if(!open) return;
-      /* the scrim and the X both carry data-close — one handler covers both */
-      if(e.target.closest('[data-close]')) hide();
-    });
-
-    document.addEventListener('keydown', function(e){
-      if(!open) return;
-      if(e.key==='Escape'){ e.preventDefault(); hide(); return; }
-      if(e.key!=='Tab') return;
-      /* Trap: focus must not escape into the page behind the scrim. */
-      var items=[].slice.call(open.querySelectorAll(FOCUSABLE))
-                  .filter(function(el){ return el.offsetParent!==null; });
-      if(!items.length) return;
-      var first=items[0], last=items[items.length-1];
-      var at=items.indexOf(document.activeElement);
-      /* at === -1 covers the panel itself, which holds focus on open and is
-         deliberately not in the cycle — Tab enters it, Shift+Tab wraps back. */
-      if(at===-1){ e.preventDefault(); (e.shiftKey ? last : first).focus(); }
-      else if(e.shiftKey && at===0){ e.preventDefault(); last.focus(); }
-      else if(!e.shiftKey && at===items.length-1){ e.preventDefault(); first.focus(); }
+    var RATE = 1 / 1.6;
+    var vids = document.querySelectorAll('video.hero-bg, video.contact-bg');
+    Array.prototype.forEach.call(vids, function(v){
+      function apply(){ v.defaultPlaybackRate = RATE; v.playbackRate = RATE; }
+      apply();
+      v.addEventListener('loadedmetadata', apply);
     });
   })();
 
-  /* ---- table of contents: built from the headings so it can never drift ---- */
+  /* The ecosystem map autoplays and loops. Someone who has asked the OS to
+     reduce motion should not have a looping animation running under their
+     reading — pause it and leave the first frame as a still. */
   (function(){
-    var nav=document.getElementById('toc');
-    var secs=[].slice.call(document.querySelectorAll('.article > .sec'));
-    if(!nav||!secs.length) return;
-    var ul=document.createElement('ul'), links=[], targets=[];
-    secs.forEach(function(sec,i){
-      var h=sec.querySelector('h2'); if(!h) return;
-      if(!sec.id) sec.id='section-'+(i+1);
-      var li=document.createElement('li'), a=document.createElement('a');
-      a.href='#'+sec.id;
-      a.textContent=h.textContent.trim();
-      li.appendChild(a); ul.appendChild(li);
-      links.push(a); targets.push(sec);
-    });
-    nav.appendChild(ul);
-
-    /* Runs straight off the scroll event. With this few sections the rect
-       reads are trivial, and it avoids a rAF-throttle whose "pending" flag
-       stays latched whenever a queued frame never fires. Reading live rects
-       also means an opened deep-dive shifts offsets with no invalidation. */
-    function spy(){
-      var probe=window.scrollY+140, active=-1;
-      for(var i=0;i<targets.length;i++){
-        if(targets[i].getBoundingClientRect().top+window.scrollY<=probe) active=i;
-      }
-      /* pin the last item once the page bottom is reached */
-      if(window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-2){
-        active=targets.length-1;
-      }
-      for(var j=0;j<links.length;j++) links[j].classList.toggle('active', j===active);
-    }
-    window.addEventListener('scroll', spy, {passive:true});
-    window.addEventListener('resize', spy, {passive:true});
-    spy();
-  })();
-
-  /* ---------- disclosure notice ----------
-     Dismissal is in-memory only: no storage, so the notice returns on reload.
-     That is deliberate — a reader arriving fresh should always see it.
-
-     The bar is fixed, so it is out of flow and would sit on top of the footer
-     at the bottom of the page. Rather than guess a padding, measure the bar:
-     it wraps to two or three lines on narrow screens, so a hard-coded value
-     would be wrong at exactly the widths where it matters most. The padding
-     is released the moment the bar is dismissed. */
-  (function(){
-    var note = document.getElementById('disclosure');
-    if(!note) return;
-    var x = note.querySelector('.disclosure-x');
-    if(!x) return;
-
-    function reserve(){
-      if(note.hidden){ document.body.style.paddingBottom = ''; return; }
-      var h = note.getBoundingClientRect().height;
-      document.body.style.paddingBottom = (h + 48) + 'px';
-    }
-
-    x.addEventListener('click', function(){ note.hidden = true; reserve(); });
-
-    if(window.ResizeObserver){
-      new ResizeObserver(reserve).observe(note);
-    }else{
-      window.addEventListener('resize', reserve, {passive:true});
-    }
-    reserve();
+    var q = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (!q || !q.matches) return;
+    var vids = document.querySelectorAll('video.eco, video.contact-bg, video.hero-bg');
+    for (var i=0;i<vids.length;i++){ vids[i].autoplay = false; vids[i].pause(); }
   })();
 </script>
 

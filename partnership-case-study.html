@@ -342,7 +342,12 @@ a:hover{ text-decoration-color:var(--ink); }
   letter-spacing:var(--tracking-mono); color:var(--ink-3);
 }
 .theme-toggle{
-  background:transparent; border:1px solid var(--ghost-border);
+  /* Matches the landing page's toggle and the panel idiom behind it:
+     --surface-raised behind a --border hairline. transparent over
+     --ghost-border gave the control no body — it read as an outline sitting on
+     the bar rather than a button. .modal-x keeps the ghost treatment: it sits
+     on a raised panel already and does not need a second surface. */
+  background:var(--surface-raised); border:1px solid var(--border);
   border-radius:var(--radius-pill); width:34px; height:34px;
   cursor:pointer; color:var(--ink-2);
   display:inline-flex; align-items:center; justify-content:center;

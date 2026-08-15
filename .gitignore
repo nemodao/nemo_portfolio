@@ -4,3 +4,8 @@ _probe.html
 _v.html
 _s.html
 images-original/
+
+# Local revision history — one snapshot per edit pass. Useful on disk, noise in
+# the repo, and they would be served as real pages by GitHub Pages.
+index.BACKUP*.html
+partnership-case-study.BACKUP*.html
