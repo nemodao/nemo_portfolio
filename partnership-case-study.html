@@ -26,7 +26,12 @@
 <meta name="theme-color" id="themeColorMeta" content="#FBFBFA">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Manrope as a variable axis, not two static cuts. The bar's wordmark is set
+     at 300, which simply did not exist in wght@400;500 — it silently fell back
+     to 400 and the mark rendered heavier here than on the landing page. The
+     variable file is also the smaller download of the two (24,576 B against
+     28,244 B) and it unlocks the rest of the ladder at no cost. -->
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script>
   (function(){
     /* Light is the default: this is a long-form reading surface. */
@@ -76,6 +81,7 @@
   --font-mono:'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo,
               Monaco, Consolas, monospace;
 
+  --fw-light:300;   /* the wordmark only */
   --fw-regular:400;
   --fw-medium:500;
 
@@ -316,32 +322,68 @@ a:hover{ text-decoration-color:var(--ink); }
   pointer-events:none; z-index:60;
 }
 
-/* ---------- top bar ---------- */
+/* ---------- scroll-in top bar ----------
+   Ported wholesale from the landing page, so the two pages behave identically.
+   Was sticky and always on; now hidden until the masthead is 60% scrolled past,
+   then it slides down. Fixed, so it takes no part in layout and nothing below
+   shifts when it appears.
+   z-index 45 keeps it under the floating toggle (50) and over the page.
+   visibility, not just opacity: it keeps the bar out of the tab order and away
+   from screen readers while it is off-stage. */
 .topbar{
-  position:sticky; top:0; z-index:40;
+  position:fixed; top:0; left:0; right:0; z-index:45;
   background:var(--canvas); border-bottom:1px solid var(--border);
+  transform:translateY(-100%); opacity:0; visibility:hidden;
+  transition:transform .28s ease, opacity .28s ease, visibility 0s linear .28s;
 }
-@supports (backdrop-filter:blur(2px)){
-  .topbar{ background:color-mix(in srgb, var(--canvas) 88%, transparent); backdrop-filter:blur(10px); }
+.topbar.is-visible{
+  transform:none; opacity:1; visibility:visible;
+  transition:transform .28s ease, opacity .28s ease, visibility 0s;
+}
+@media (prefers-reduced-motion:reduce){
+  .topbar, .topbar.is-visible{ transition:none; }
 }
 .topbar-inner{
   max-width:var(--measure-wide); margin:0 auto; padding:0 var(--space-24);
-  height:64px; display:flex; align-items:center; justify-content:space-between; gap:16px;
+  height:60px; display:flex; align-items:center; justify-content:space-between; gap:16px;
 }
-/* A label, not a link — there is no portfolio index to return to yet, so the
-   "←" pseudo-element and the hover colour were removed along with the href.
-   An arrow that goes nowhere is worse than no arrow. */
+/* The landing page's lockup, not this page's old mono "Selected Work" label:
+   the point of matching the bars is that the same mark greets you on both.
+   Nothing here leans on weight — 300 sits a step BELOW the headings' 400, and
+   what makes it read as a mark is the tracking: -0.03em is roughly 4x the
+   body's -0.007em, which locks the letters into one shape rather than a row of
+   words. */
 .brand{
-  font-family:var(--font-mono); font-size:var(--text-caption);
-  letter-spacing:var(--tracking-mono); color:var(--ink-2);
-  display:inline-flex; align-items:center; gap:8px;
+  display:inline-flex; align-items:center; gap:10px;
+  font-family:var(--font-sans);
+  font-size:17px; font-weight:var(--fw-light); letter-spacing:-0.03em;
+  color:var(--ink);
 }
-.topbar .right{ display:flex; align-items:center; gap:12px; }
-.topbar .role{
-  font-family:var(--font-mono); font-size:var(--text-caption);
-  letter-spacing:var(--tracking-mono); color:var(--ink-3);
+.tb-photo{
+  width:26px; height:26px; flex:none;
+  border-radius:50%; object-fit:cover; object-position:top center;
+  /* The PNG is a cut-out, so the fill is what makes the circle. --ink is the
+     one token that already inverts the way this wants: near-black in light,
+     near-white in dark, so the disc opposes the bar in both modes. */
+  background:var(--ink);
 }
+
+/* The sentinel is a zero-size marker, not a spacer: absolute so it adds no
+   height, and the masthead is the containing block for its 60% offset. This is
+   the landing page's .hero-sentinel, re-anchored to what opens THIS page. */
+.masthead{ position:relative; }
+.hero-sentinel{
+  position:absolute; top:60%; left:0;
+  width:1px; height:1px; pointer-events:none;
+}
+
 .theme-toggle{
+  /* Floating, and it docks into the bar when the bar arrives — the landing
+     page's behaviour. It used to live inside the bar, which only worked while
+     the bar was always on screen. */
+  position:fixed; z-index:50;
+  right:calc(var(--space-24) + env(safe-area-inset-right));
+  top:calc(var(--space-24) + env(safe-area-inset-top));
   /* Matches the landing page's toggle and the panel idiom behind it:
      --surface-raised behind a --border hairline. transparent over
      --ghost-border gave the control no body — it read as an outline sitting on
@@ -351,7 +393,22 @@ a:hover{ text-decoration-color:var(--ink); }
   border-radius:var(--radius-pill); width:34px; height:34px;
   cursor:pointer; color:var(--ink-2);
   display:inline-flex; align-items:center; justify-content:center;
-  transition:border-color .15s ease, color .15s ease;
+  transition:top .28s ease, right .28s ease,
+             border-color .15s ease, color .15s ease;
+}
+/* Docked. The sibling combinator reads the bar's own state, so there is one
+   source of truth for "is the bar up" and no second observer to keep in sync.
+   right: the bar's content column is max-width 940 centred inside 24px of
+   padding, so its right content edge sits (100vw - 940)/2 + 24 from the edge —
+   max() collapses that to a flat 24 once the viewport is narrower than 940.
+   top: (60 - 34) / 2 = 13, the bar's height less the button's, halved. */
+.topbar.is-visible ~ .theme-toggle{
+  top:13px;
+  right:max(var(--space-24),
+            calc(50vw - var(--measure-wide) / 2 + var(--space-24)));
+}
+@media (prefers-reduced-motion:reduce){
+  .theme-toggle{ transition:border-color .15s ease, color .15s ease; }
 }
 .theme-toggle:hover{ border-color:var(--stroke-art); color:var(--ink); }
 .theme-toggle svg{ width:15px; height:15px; }
@@ -1160,26 +1217,29 @@ footer p{
 
 <div class="tint-strip" id="tintStrip" aria-hidden="true"></div>
 
-<div class="topbar">
+<header class="topbar" id="topbar">
   <div class="topbar-inner">
-    <span class="brand">Selected Work</span>
-    <div class="right">
-      <span class="role">Head of Product</span>
-      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle colour mode">
-        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="4.2"/>
-          <line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/>
-          <line x1="2.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21.5" y2="12"/>
-          <line x1="5.3" y1="5.3" x2="7.1" y2="7.1"/><line x1="16.9" y1="16.9" x2="18.7" y2="18.7"/>
-          <line x1="5.3" y1="18.7" x2="7.1" y2="16.9"/><line x1="16.9" y1="7.1" x2="18.7" y2="5.3"/>
-        </svg>
-        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
-          <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/>
-        </svg>
-      </button>
-    </div>
+    <!-- alt is empty on purpose: the words beside it say the same thing and are
+         never hidden, so a screen reader would otherwise hear the name twice. -->
+    <span class="brand">
+      <img class="tb-photo" src="images/nemo.png" alt="" decoding="async">
+      Nemo's Portfolio
+    </span>
   </div>
-</div>
+</header>
+
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle colour mode">
+  <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="4.2"/>
+    <line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/>
+    <line x1="2.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21.5" y2="12"/>
+    <line x1="5.3" y1="5.3" x2="7.1" y2="7.1"/><line x1="16.9" y1="16.9" x2="18.7" y2="18.7"/>
+    <line x1="5.3" y1="18.7" x2="7.1" y2="16.9"/><line x1="16.9" y1="7.1" x2="18.7" y2="5.3"/>
+  </svg>
+  <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+    <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/>
+  </svg>
+</button>
 
 <nav class="toc" id="toc" aria-label="Contents"></nav>
 
@@ -1187,6 +1247,7 @@ footer p{
 
   <!-- ============ MASTHEAD ============ -->
   <header class="masthead">
+    <div class="hero-sentinel" id="heroSentinel" aria-hidden="true"></div>
     <p class="kicker">Case Study</p>
     <h1 class="title">Partnership System</h1>
     <p class="byline">Head of Product · 1 PM + 4 engineers · 6 months · shipped January 2026</p>
@@ -1723,6 +1784,35 @@ footer p{
       if (window.setThemeColor) window.setThemeColor(next);
       try{ localStorage.setItem('nt-theme', next); }catch(e){}
     });
+  })();
+
+  /* ---- scroll-in top bar ----
+     The landing page's, unchanged except for what it watches: there the marker
+     sits at 60% of the hero, here at 60% of the masthead. isIntersecting alone
+     is not enough — it also goes false once the marker is far BELOW the
+     viewport, which is the state at the very top of a long page, so the sign of
+     boundingClientRect.top is what separates "scrolled past" from "not reached
+     yet". */
+  (function(){
+    var bar  = document.getElementById('topbar');
+    var mark = document.getElementById('heroSentinel');
+    if (!bar || !mark) return;
+
+    function set(on){ bar.classList.toggle('is-visible', on); }
+
+    if (!('IntersectionObserver' in window)) {
+      /* Pre-2019 Safari and friends: read the marker's position directly.
+         Same test, just paid for on every scroll event. */
+      var onScroll = function(){ set(mark.getBoundingClientRect().top < 0); };
+      window.addEventListener('scroll', onScroll, {passive:true});
+      onScroll();
+      return;
+    }
+
+    new IntersectionObserver(function(entries){
+      var e = entries[entries.length - 1];
+      set(!e.isIntersecting && e.boundingClientRect.top < 0);
+    }, {threshold:0}).observe(mark);
   })();
 
   /* ---- stat rail: edge fades, plus a slow continuous marquee on mobile ----
