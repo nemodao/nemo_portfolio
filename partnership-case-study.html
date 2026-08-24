@@ -1243,7 +1243,7 @@ footer p{
     <h2>Why build it</h2>
   </div>
 
-  <p>When I returned to the broker as Head of Product, the partner business already existed — with just 5 partners — but had no system behind it at all.</p>
+  <p>When I returned to the broker as Head of Product, the partner business already existed, with just 5 partners, but had no system behind it at all.</p>
 
   <p>Drawing on my experience at Exness, a top-tier company, I saw the need to bring that partnership model and system architecture back to the broker, to scale a segment with real potential.</p>
 
@@ -1309,7 +1309,7 @@ footer p{
     <h2>Big directions</h2>
   </div>
 
-  <p>Partnership systems have been in this market for years. I was building one late — so I studied what already existed. I broke down what we needed internally, and drew on what I'd seen meeting partners at Exness offline seminars. The goal: learn from the strengths of other systems, and fix their weaknesses. From that, I set two main directions.</p>
+  <p>Partnership systems have been in this market for years. I was building one late, so I studied what already existed. I broke down what we needed internally, and drew on what I'd seen meeting partners at Exness offline seminars. The goal: learn from the strengths of other systems, and fix their weaknesses. From that, I set two main directions.</p>
 
   <div class="dirbox">
     <h3 class="dir-label">
@@ -1325,7 +1325,7 @@ footer p{
       </svg>
       Architecture design direction
     </h3>
-    <p class="dir-msg">The system had to scale without limits, to handle whatever partners might ask for. The infrastructure and data schema didn't need to be perfect — but they always had to leave room to adopt new requirements.</p>
+    <p class="dir-msg">The system had to scale without limits, to handle whatever partners might ask for. The infrastructure and data schema didn't need to be perfect, but they always had to leave room to adopt new requirements.</p>
   </div>
 
   <div class="dirbox">
@@ -1336,7 +1336,7 @@ footer p{
       </svg>
       User direction
     </h3>
-    <p class="dir-msg">This system touches money, and the people using it — company staff — make mistakes.</p>
+    <p class="dir-msg">This system touches money, and the people using it (company staff) make mistakes.</p>
     <p class="dir-msg">So it needed multiple layers of protection against user error. Guarding against careless mistakes became a key item on the development checklist.</p>
   </div>
 
@@ -1345,12 +1345,12 @@ footer p{
     <h2>Key decisions</h2>
   </div>
 
-  <p>This was a demanding, genuinely interesting project. It forced a few big structural decisions — and a constant obsession with scaling without limits. Below are the two biggest decisions, then an overview of the system's main modules.</p>
+  <p>This was a demanding, genuinely interesting project. It forced a few big structural decisions, and a constant obsession with scaling without limits. Below are the two biggest decisions, then an overview of the system's main modules.</p>
 
   <section class="dbox">
     <h3 class="dbox-title">Rebuilding the CRM &amp; Back Office data schema</h3>
 
-    <p>We wanted to scale without limits, but the data schema at the time couldn't support that. The original system was designed to run a simple broker model — not to plug into a Partnership System with complex customization needs.</p>
+    <p>We wanted to scale without limits, but the data schema at the time couldn't support that. The original system was designed to run a simple broker model. It had no way to plug into a Partnership System with complex customization needs.</p>
 
     <p>So I made a decision that was painful, costly, and risky, but a risk I could control: tear down most of the old structure, rebuild it, and migrate the data from scratch.</p>
 
@@ -1380,14 +1380,14 @@ footer p{
         </div>
         <div class="deep-body" tabindex="0">
           <h4><span class="mark">The setup</span></h4>
-          <p>As covered earlier, we had to rebuild the data schema and add foundational CRM features to support the partnership system — all to meet our partners' demanding requirements. Here's a real example of what "the schema couldn't support it" looked like: a request from a large partner during negotiation.</p>
+          <p>As covered earlier, we had to rebuild the data schema and add foundational CRM features to support the partnership system, all to meet our partners' demanding requirements. Here's a real example of what "the schema couldn't support it" looked like: a request from a large partner during negotiation.</p>
 
           <h4><span class="mark">What the partner asked for</span></h4>
           <blockquote>
-            <p class="q-intro">Say a partner — John, with a network of 2,000 clients large and small — wants to work with the broker, and comes in with a demanding set of requirements:</p>
+            <p class="q-intro">Say a partner (John, with a network of 2,000 clients large and small) wants to work with the broker, and comes in with a demanding set of requirements:</p>
             <span class="q-mark" aria-hidden="true">&ldquo;</span>
             <ul class="q-points">
-              <li>I want two different client groups — one with a higher trading fee, one with lower.</li>
+              <li>I want two different client groups: one with a higher trading fee, one with lower.</li>
               <li>I want to decide which clients go into which group.</li>
               <li>But within each group, I still want multiple account types, from low fee to high, for the client to choose from.</li>
               <li>And for each account type, I want a different partner reward when that client trades.</li>
@@ -1401,18 +1401,18 @@ footer p{
                 <img class="shot-img shot-img-dark" src="images/fig2-dark.webp"
                      width="2000" height="1153" alt="John's request mapped as a hierarchy: one partner group branches into two client groups; each client group holds several account types (demo and real, standard, pro and investor); and each real account type carries its own partner scheme — a CPA amount, a rebate share, or both" loading="lazy" decoding="async">
               </div>
-              <figcaption><span class="cap-n">Caption</span>Here's John's request as a diagram. Back then, the system had no way to handle it — it didn't even have client groups or account types yet.</figcaption>
+              <figcaption><span class="cap-n">Caption</span>Here's John's request as a diagram. Back then, the system had no way to handle it. It didn't even have client groups or account types yet.</figcaption>
             </figure>
 
           <h4><span class="mark">Why the old schema couldn't handle this</span></h4>
 
           <h5>Problem 1: No concept of a client group.</h5>
-          <p>Every client in the system was treated the same. There was no grouping — any change had to be hardcoded client by client.</p>
+          <p>Every client in the system was treated the same. There was no grouping, so any change had to be hardcoded client by client.</p>
           <p><b>Fix:</b> I introduced a client group as a first-class entity, with its own configurable attributes (exchange rate, which account types it's allowed to use, and so on). Clients get assigned to a group; a partner's clients can sit in a group built specifically for them.</p>
 
           <h5>Problem 2: No concept of an account type.</h5>
-          <p>Trading accounts were controlled entirely through MT5 groups — the CRM itself had no definition of trading conditions at all.</p>
-          <p><b>Fix:</b> I introduced account type as a configurable entity, and linked it to client group: a given client group is restricted to a defined set of account types, each with its own spread, commission, and swap fee — from low to high.</p>
+          <p>Trading accounts were controlled entirely through MT5 groups; the CRM itself had no definition of trading conditions at all.</p>
+          <p><b>Fix:</b> I introduced account type as a configurable entity, and linked it to client group: a given client group is restricted to a defined set of account types, each with its own spread, commission, and swap fee, from low to high.</p>
 
           <figure>
             <div class="fig-media shot-frame">
@@ -1432,9 +1432,9 @@ footer p{
           </figure>
 
           <h4><span class="mark">What this bought us</span></h4>
-          <p>This wasn't an easy call. Rebuilding meant losing time, burning effort, and taking on real operational and data risk — migration especially could go wrong in ways that hit live accounts. I sat with that trade-off for a while, but I didn't want to build the Partnership System on a foundation I already knew would collapse under it. Rebuilding first was the only path to something that could actually last.</p>
-          <p>That restructuring gave us a foundation solid enough to organize and manage clients properly — and it's exactly what the Partnership System was built on top of in the next phase. It's what lets the system satisfy every part of that partner's request, including the hardest one: a different reward for the same client, depending on which account type they trade from.</p>
-          <p>From that point on, the system could take on real customization and scale with it. A short-term risk for long-term flexibility — and it paid off.</p>
+          <p>This wasn't an easy call. Rebuilding meant losing time, burning effort, and taking on real operational and data risk. Migration especially could go wrong in ways that hit live accounts. I sat with that trade-off for a while, but I didn't want to build the Partnership System on a foundation I already knew would collapse under it. Rebuilding first was the only path to something that could actually last.</p>
+          <p>That restructuring gave us a foundation solid enough to organize and manage clients properly, and it's what the Partnership System was built on top of in the next phase. It's what lets the system satisfy every part of that partner's request, including the hardest one: a different reward for the same client, depending on which account type they trade from.</p>
+          <p>From that point on, the system could take on real customization and scale with it. A short-term risk for long-term flexibility, and it paid off.</p>
         </div>
       </div>
     </div>
@@ -1443,7 +1443,7 @@ footer p{
   <section class="dbox">
     <h3 class="dbox-title">Managing partner schemes as dynamic modules</h3>
 
-    <p>Working with partners — especially when negotiating and onboarding large ones — means they'll ask to change their scheme, customize it, or even switch it mid-run. Every large partner also comes with its own set of custom requirements.</p>
+    <p>Working with partners, especially when negotiating and onboarding large ones, means they'll ask to change their scheme, customize it, or even switch it mid-run. Every large partner also comes with its own set of custom requirements.</p>
 
     <p>So I designed the architecture to manage schemes as modules from the start, to maximize customization without needing to touch the code.</p>
 
@@ -1457,7 +1457,7 @@ footer p{
       <figcaption><span class="cap-n">Caption</span>All figures shown are illustrative.</figcaption>
     </figure>
 
-    <p>The goal: keep every partner happy, and take on any partnership opportunity for the broker — running many customized schemes with many partners at the same time.</p>
+    <p>The goal: keep every partner happy, and take on any partnership opportunity for the broker, running many customized schemes with many partners at the same time.</p>
 
     <button class="deep-open" type="button" data-modal="dm-2"
             aria-label="Read more about this decision — what &quot;dynamic&quot; means in practice">Read more about this decision <span class="arw" aria-hidden="true">&rarr;</span></button>
@@ -1473,13 +1473,13 @@ footer p{
         </div>
         <div class="deep-body" tabindex="0">
           <h4><span class="mark">The setup</span></h4>
-          <p>Winning large partners away from local and international competitors comes down to one thing: how far you can customize their programme. So when I designed this system, I set myself one rule — I should always be able to say yes to a new request, never "sorry, the architecture doesn't allow that."</p>
-          <p>Here's what "dynamic" actually means in practice — a few standalone examples to show how far the customization goes.</p>
+          <p>Winning large partners away from local and international competitors comes down to one thing: how far you can customize their programme. So when I designed this system, I set myself one rule: I should always be able to say yes to a new request, never "sorry, the architecture doesn't allow that."</p>
+          <p>Here's what "dynamic" actually means in practice: a few standalone examples to show how far the customization goes.</p>
 
           <h5>A. Taking on any scheme a large partner asks for</h5>
-          <p>A large, demanding partner can come to us with a fully custom set of scheme requirements. As long as it's reasonable and safe for the company, we can set it up and launch it in about 30 minutes — no code involved.</p>
+          <p>A large, demanding partner can come to us with a fully custom set of scheme requirements. As long as it's reasonable and safe for the company, we can set it up and launch it in about 30 minutes, with no code involved.</p>
 
-          <p><b>The design is modular:</b> Every piece — the scheme, the trading conditions — is built from independent components. That's what makes it possible: when either the broker or the partner wants a change, we swap the component. No code needed. Here's what that looks like:</p>
+          <p><b>The design is modular:</b> Every piece (the scheme, the trading conditions) is built from independent components. That's what makes it possible: when either the broker or the partner wants a change, we swap the component. No code needed. Here's what that looks like:</p>
 
           <figure>
             <div class="fig-media shot-frame">
@@ -1488,13 +1488,13 @@ footer p{
               <img class="shot-img shot-img-dark" src="images/modules-accent-dark.webp"
                    width="2000" height="1360" alt="A partner programme broken into configurable modules across four rows: the Custom IB Program at the top branches into Client Group 1 (lower fee) and Client Group 2 (higher fee); each client group offers its own account types, Standard and Pro; and each account type carries its own partner reward scheme — a CPA amount, a rebate share, or both. Individual nodes are highlighted to show that any single module can be swapped or reconfigured on its own without touching the rest." loading="lazy" decoding="async">
             </div>
-            <figcaption><span class="cap-n">Caption</span>A partner programme, assembled from independent parts: client groups, account types, and reward schemes. Each highlighted piece is dragged into place — swap any one, and the programme changes, no code touched. All figures shown are illustrative.</figcaption>
+            <figcaption><span class="cap-n">Caption</span>A partner programme, assembled from independent parts: client groups, account types, and reward schemes. Each highlighted piece is dragged into place. Swap any one, and the programme changes, no code touched. All figures shown are illustrative.</figcaption>
           </figure>
 
           <h5>B. A growth path built for one partner</h5>
-          <p>A large partner willing to commit to specific KPI targets can get a progression path of their own: as they clear each milestone, their reward rates step up — higher rebates and CPA across every client group and account type.</p>
+          <p>A large partner willing to commit to specific KPI targets can get a progression path of their own: as they clear each milestone, their reward rates step up: higher rebates and CPA across every client group and account type.</p>
 
-          <p>This runs on the same modular design. Defining a partner's growth path is a configuration, not a build — agreed on and live in about 30 minutes.</p>
+          <p>This runs on the same modular design. Defining a partner's growth path is a configuration step. We agree it and it goes live in about 30 minutes.</p>
 
           <figure>
             <div class="fig-media shot-frame">
@@ -1503,11 +1503,11 @@ footer p{
               <img class="shot-img shot-img-dark" src="images/growth-dark.webp"
                    width="2000" height="1360" alt="A single partner's growth path laid out as a grid. Along the top, a timeline of tiers — Entry Tier, Tier Level 2, and further tiers beyond. Each tier column lists its target KPIs (active traders, total value locked, net deposit) and, below them, the reward rates that tier unlocks for every combination of client group and account type — rebate percentages and CPA amounts, all rising from one tier to the next. Individual cells are highlighted to show that each one is placed by configuration rather than written in code." loading="lazy" decoding="async">
             </div>
-            <figcaption><span class="cap-n">Caption</span>One partner's growth path: each tier sets a KPI target, and clearing it lifts the reward rates — rebates and CPA — for every client group and account type. Each highlighted cell is dragged into place; the whole path is assembled, not coded. All figures shown are illustrative.</figcaption>
+            <figcaption><span class="cap-n">Caption</span>One partner's growth path: each tier sets a KPI target, and clearing it lifts the reward rates (rebates and CPA) for every client group and account type. Each highlighted cell is dragged into place, so the whole path gets assembled in the UI without code. All figures shown are illustrative.</figcaption>
           </figure>
 
           <h5>C. Built to take on more</h5>
-          <p>The system isn't designed to support just a handful of partners. By design, it could serve hundreds — even thousands — of large partners, if the business ever gets there. Each with their own requirements, and the system doesn't break down as that number grows.</p>
+          <p>The system isn't designed to support just a handful of partners. By design, it could serve hundreds, even thousands, of large partners, if the business ever gets there. Each with their own requirements, and the system doesn't break down as that number grows.</p>
           <figure>
             <div class="fig-media shot-frame">
               <img class="shot-img shot-img-light" src="images/multi-light.webp"
@@ -1568,9 +1568,9 @@ footer p{
     <h2>How we worked</h2>
   </div>
 
-  <p>Over 6 months, with 1 PM and 4 engineers, we delivered the entire system — including rebuilding the CRM and Back Office data schema from the ground up, all while running other projects in parallel.</p>
+  <p>Over 6 months, with 1 PM and 4 engineers, we delivered the entire system, including rebuilding the CRM and Back Office data schema from the ground up, all while running other projects in parallel.</p>
 
-  <p class="pull">Our developers were based in China and didn't speak English, so we worked Zero-Meeting: I owned architecture, backend logic, API, front-end design, spec, and QA myself — so when work reached them, they could just code, with little to no need to ask questions.</p>
+  <p class="pull">Our developers were based in China and didn't speak English, so we worked Zero-Meeting: I owned architecture, backend logic, API, front-end design, spec, and QA myself, so when work reached them, they could just code, with little to no need to ask questions.</p>
 
   <!-- ============ 05 ============ -->
   <div class="sec">
@@ -1579,7 +1579,7 @@ footer p{
 
   <h3 class="sub">Partner Area UI</h3>
 
-  <p>The Partner Area focuses on what partners actually need: a Mini CRM to manage their own clients, and visibility into how their rewards are calculated and paid. The goal was trust — partners can see the logic, not just the result.</p>
+  <p>The Partner Area focuses on what partners actually need: a Mini CRM to manage their own clients, and visibility into how their rewards are calculated and paid. The goal was trust.</p>
 
     <figure>
     <div class="fig-media shot-frame">
@@ -1588,7 +1588,7 @@ footer p{
       <img class="shot-img shot-img-dark" src="images/partner-area-dark.webp"
            width="2000" height="1586" alt="Three phone screens side by side. Home Dashboard: revenue with a withdraw action, referral tools with a copyable link and code, and a reward-performance panel. Mini CRM: a client list where each client shows an ID, a status badge such as acquisition in progress or active trader, current status and next target, plus lifetime deposit, withdrawal and live trading figures. Funnel Overview: counts for leads, KYC clients, first-time-deposit clients, traded clients, recently active clients and premium clients." loading="lazy" decoding="async">
     </div>
-    <figcaption><span class="cap-n">Caption</span>The partner's home: earnings and referral tools at a glance, plus a Mini CRM to track each client's status — from lead to KYC to first deposit — like a sales pipeline of their own.</figcaption>
+    <figcaption><span class="cap-n">Caption</span>The partner's home: earnings and referral tools at a glance, plus a Mini CRM to track each client's status from lead to KYC to first deposit, like a sales pipeline of their own.</figcaption>
   </figure>
 
   <figure>
@@ -1598,14 +1598,14 @@ footer p{
       <img class="shot-img shot-img-dark" src="images/reward-detail-dark.webp"
            width="2000" height="1324" alt="A single wide screen titled Reward details, showing one reward broken into three steps. Step 1 calculates client performance over a dated window from deposit amount and trading volume. Step 2 maps those two KPIs onto a range table to produce an original reward. Step 3 splits that reward across seven partner levels by percentage, with the viewing partner marked at level 1. A summary bar at the bottom states the partner's own share." loading="lazy" decoding="async">
     </div>
-    <figcaption><span class="cap-n">Caption</span>How a single reward is calculated, shown step by step: the client's performance, the reward it maps to, and how it's split across partner levels. Partners see the full logic, not just the final number.</figcaption>
+    <figcaption><span class="cap-n">Caption</span>How a single reward is calculated, shown step by step: the client's performance, the reward it maps to, and how it's split across partner levels. Partners can follow every step, down to the final number.</figcaption>
   </figure>
 
   <h3 class="sub">Scheme Builder Form</h3>
 
   <p>There are three builder forms, one for each scheme type. Each one offers a set of KPI metrics and reward types to choose from, and lets a CRM user configure payout rates per partner tier. Every form includes inline guidance at each step, so users can't misconfigure a scheme without understanding what they're setting.</p>
 
-  <p>I designed each form to walk through the full calculation logic — the trigger event, the KPI measurement window, the reward tiers, and how the reward splits across up to seven partner levels. What I was really after was control: I wanted the payout logic powerful enough to handle the hardest requests a partner could throw at us, and precise enough to trust. And this is just one scheme type — I built the system to support several.</p>
+  <p>I designed each form to walk through the full calculation logic: the trigger event, the KPI measurement window, the reward tiers, and how the reward splits across up to seven partner levels. What I was really after was control: I wanted the payout logic powerful enough to handle the hardest requests a partner could throw at us, and precise enough to trust. And this is just one scheme type; I built the system to support several.</p>
 
   <figure>
     <div class="fig-media shot-frame">
@@ -1618,7 +1618,7 @@ footer p{
 
   <h3 class="sub">Growth Path Form (Tier Up / Down)</h3>
 
-  <p>The Growth Path Form makes tier upgrade and downgrade logic visible and editable directly — the conditions for promoting or demoting a partner aren't buried in code. Multiple partner programmes, each with their own tier logic, can run side by side without conflict.</p>
+  <p>The Growth Path Form makes tier upgrade and downgrade logic visible and editable directly, so the conditions for promoting or demoting a partner aren't buried in code. Multiple partner programmes, each with their own tier logic, can run side by side without conflict.</p>
 
   <figure>
     <div class="fig-media shot-frame">
@@ -1631,14 +1631,14 @@ footer p{
 
       <h3 class="sub">Fraud Prevention Engine</h3>
 
-  <p>Fraud prevention runs on weekly scoring across device, network, and attribution signals, rolling up into a partner-level risk rate. Each case shows a plain-language explanation and a confidence band, with three graduated actions &mdash; blacklist the partner, blacklist the flagged clients only, or clear it.</p>
+  <p>Fraud prevention runs on weekly scoring across device, network, and attribution signals, rolling up into a partner-level risk rate. Each case shows a plain-language explanation and a confidence band, with three graduated actions: blacklist the partner, blacklist the flagged clients only, or clear it.</p>
 
 <!-- ============ 06 ============ -->
   <div class="sec">
     <h2>The impact</h2>
   </div>
 
-  <p>Six months after launch, the system — together with the Business Development team's work — had driven significant growth, opening a kind of opportunity the broker had never had before.</p>
+  <p>Six months after launch, the system, together with the Business Development team's work, had driven significant growth, opening a kind of opportunity the broker had never had before.</p>
 
   <div class="stat-rail">
     <div class="figures">
@@ -1693,10 +1693,10 @@ footer p{
         <text x="20" y="150" text-anchor="middle" class="dg-t2" font-size="9">launch</text>
       </svg>
     </div>
-    <figcaption><span class="cap-n">Caption</span>Partner-attributed share of new funded clients, by month since launch — climbing from a 6.0% pre-launch baseline to a 15.2% peak in month 4.</figcaption>
+    <figcaption><span class="cap-n">Caption</span>Partner-attributed share of new funded clients, by month since launch, climbing from a 6.0% pre-launch baseline to a 15.2% peak in month 4.</figcaption>
   </figure>
 
-  <p>The distribution is a long tail: most partners refer just a handful of clients each, a smaller group brings in dozens, and only a few bring in more. The channel's strength comes from the breadth of many small partners, not a few large ones.</p>
+  <p>The distribution is a long tail: most partners refer just a handful of clients each, a smaller group brings in dozens, and only a few bring in more. The channel's strength comes from the breadth of many small partners.</p>
 
   <figure>
     <div class="fig-media plain">
@@ -1710,14 +1710,14 @@ footer p{
         <span>1–3 clients</span><span>4–9 clients</span><span>10–99 clients</span><span>100+ clients</span>
       </div>
     </div>
-    <figcaption><span class="cap-n">Caption</span>Partner distribution — referrals per partner. The channel is carried by volume of small partners, not a handful of large ones.</figcaption>
+    <figcaption><span class="cap-n">Caption</span>Partner distribution: referrals per partner. The channel is carried by the sheer number of small partners.</figcaption>
   </figure>
 
   <!-- ============ CLOSING ============ -->
   <div class="burst">
     <p class="b-kicker">Contact</p>
     <h2>Building partner infrastructure, or hiring someone who has?</h2>
-    <p>I work on the systems behind FX/CFD brokerages — commission engines, CRM, back office, the parts that don't show but decide everything.</p>
+    <p>I work on the systems behind FX/CFD brokerages: commission engines, CRM, back office, the parts that don't show but decide everything.</p>
     <a class="btn" href="mailto:nndao96@gmail.com">Get in touch <span aria-hidden="true">→</span></a>
   </div>
 
@@ -1730,7 +1730,7 @@ footer p{
 <aside class="disclosure" id="disclosure" aria-labelledby="disclosure-title">
   <div class="disclosure-text">
     <p class="disclosure-title" id="disclosure-title">A note on confidentiality</p>
-    <p>All company names, client data, and figures here are anonymized or illustrative. The mechanisms shown are standard industry practice &mdash; nothing confidential is disclosed.</p>
+    <p>All company names, client data, and figures here are anonymized or illustrative. The mechanisms shown are standard industry practice; nothing confidential is disclosed.</p>
   </div>
   <button class="disclosure-x" type="button" aria-label="Dismiss this notice">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
