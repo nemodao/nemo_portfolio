@@ -350,6 +350,13 @@ a:hover{ text-decoration-color:var(--ink); }
   font-size:17px; font-weight:var(--fw-light); letter-spacing:-0.03em;
   color:var(--ink);
 }
+/* The mark is the way home from here. On the landing page it stays a <span>:
+   that page IS the index, so a link would point at itself. Styled rather than
+   left to the UA, which would underline it and repaint it link-blue. */
+a.brand{ text-decoration:none; transition:opacity .15s ease; }
+a.brand:hover{ opacity:.72; }
+a.brand:focus-visible{ outline:2px solid var(--accent); outline-offset:4px; border-radius:4px; }
+@media (prefers-reduced-motion:reduce){ a.brand{ transition:none; } }
 .tb-photo{
   width:26px; height:26px; flex:none;
   border-radius:50%; object-fit:cover; object-position:top center;
@@ -416,6 +423,35 @@ a:hover{ text-decoration-color:var(--ink); }
   letter-spacing:var(--tracking-mono); text-transform:uppercase;
   color:var(--ink-3); margin:0 0 var(--space-24);
 }
+/* Set in the sans, sentence case, at its own tracking. The first version wore
+   the kicker's register -- uppercase monospace tracked out to 0.1em -- and that
+   is the giveaway typography of a generated template, the same thing the footer
+   was carrying. A pipe between the two halves made it worse: a pipe-separated
+   breadcrumb is a widget, and nothing else on this page is built out of widgets.
+   The separator is gone entirely. Distance and weight do that job now: a gap
+   wider than any word space, and the current page a shade lighter than the link
+   back. Nothing is left to read as chrome. */
+.crumb{
+  display:flex; align-items:baseline; gap:var(--space-24);
+  font-family:var(--font-sans); font-size:var(--text-body-sm);
+  letter-spacing:var(--tracking);
+  color:var(--ink-3); margin:0 0 var(--space-24);
+}
+.crumb-back{
+  display:inline-flex; align-items:baseline; gap:6px;
+  color:var(--ink-2); text-decoration:none;
+  transition:color .15s ease;
+}
+.crumb-back:hover{ color:var(--ink); }
+.crumb-back:focus-visible{ outline:2px solid var(--accent); outline-offset:3px; border-radius:2px; }
+/* The arrow slides back on hover, the way the forward arrows on this page slide
+   on. Suppressed for reduced motion along with everything else. */
+.crumb-arw{ transition:transform .15s ease; }
+.crumb-back:hover .crumb-arw{ transform:translateX(-3px); }
+@media (prefers-reduced-motion:reduce){
+  .crumb-arw, .crumb-back:hover .crumb-arw{ transition:none; transform:none; }
+}
+.crumb-now{ color:var(--ink-3); }
 h1.title{
   font-size:clamp(30px, 5.4vw, var(--text-title));
   line-height:1.08; margin:0 0 14px;
@@ -1006,11 +1042,20 @@ figcaption .cap-n{
 .btn:hover{ background:#000; }
 footer{
   border-top:1px solid var(--border);
-  padding:var(--space-32) 0 var(--space-96);
+  /* The foot was 96px deep against a 32px shoulder, three times the space above
+     it, which left the page trailing off into blank canvas. Expressed as the top
+     inset plus 30% rather than as a number, so the two stay related if the
+     token moves. */
+  padding:var(--space-32) 0 calc(var(--space-32) * 1.3);
 }
+/* Set in the sans at its own tracking, not the mono at 0.1em. Wide-tracked
+   monospace is the house voice of every generated template, and on a one-line
+   credit it was the loudest thing about the footer. 14px because the mono ran
+   wide per character: at 12px the sans would read as a size drop rather than a
+   change of voice. */
 footer p{
-  font-family:var(--font-mono); font-size:var(--text-caption);
-  letter-spacing:var(--tracking-mono); color:var(--ink-3); margin:0;
+  font-family:var(--font-sans); font-size:var(--text-body-sm);
+  letter-spacing:var(--tracking); color:var(--ink-3); margin:0;
 }
 
 /* ============================================================
@@ -1185,10 +1230,10 @@ footer p{
   <div class="topbar-inner">
     <!-- alt is empty on purpose: the words beside it say the same thing and are
          never hidden, so a screen reader would otherwise hear the name twice. -->
-    <span class="brand">
+    <a class="brand" href="index.html">
       <img class="tb-photo" src="images/nemo.png" alt="" decoding="async">
       Nemo's Portfolio
-    </span>
+    </a>
     <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle colour mode">
       <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
         <circle cx="12" cy="12" r="4.2"/>
@@ -1210,7 +1255,14 @@ footer p{
 
   <!-- ============ MASTHEAD ============ -->
   <header class="masthead">
-    <p class="kicker">Case Study</p>
+    <!-- The label became a way back. "Case Study" still names the page, but it
+         now sits after a link to the index rather than standing alone. The arrow
+         is aria-hidden: the link text already says where it goes, and a screen
+         reader announcing "left arrow Portfolio" helps nobody. -->
+    <nav class="crumb" aria-label="Breadcrumb">
+      <a class="crumb-back" href="index.html"><span class="crumb-arw" aria-hidden="true">&larr;</span>Portfolio</a>
+      <span class="crumb-now" aria-current="page">Case Study</span>
+    </nav>
     <h1 class="title">Partnership System</h1>
     <p class="byline">Head of Product · 1 PM + 4 engineers · 6 months · shipped January 2026</p>
     <p class="deck">The infrastructure that turns partner referrals into a revenue channel</p>
