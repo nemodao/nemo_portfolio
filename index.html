@@ -420,8 +420,8 @@ a:hover{ text-decoration-color:var(--ink); }
    settles it. Declared BEFORE the heading rules below so that a heading
    followed by a block still binds tightly — headings win the tie by order,
    exactly as they do in the case study. */
-.section > * + :is(.timeline, .team, .grid, .strip, .principles){ margin-top:var(--gap-block); }
-.section > :is(.timeline, .team, .grid, .strip, .principles) + *{ margin-top:var(--gap-block); }
+.section > * + :is(.timeline, .team, .grid, .work-grid, .principles){ margin-top:var(--gap-block); }
+.section > :is(.timeline, .team, .grid, .work-grid, .principles) + *{ margin-top:var(--gap-block); }
 
 /* Section heading — the lime marker.
    display:inline so the wash hugs the words and box-decoration-break gives
@@ -742,6 +742,11 @@ h1.title{
   font-size:var(--text-prose); line-height:1.5;
   color:var(--ink-2); margin:0;
 }
+/* The closing line is its own paragraph so it lands as a conclusion rather than
+   as the tail of the biography. --gap-para is the same p-to-p step the rest of
+   the page runs on; .deck zeroes its own margin, so without this the two would
+   sit flush and read as one block again. */
+.deck + .deck{ margin-top:var(--gap-para); }
 
 /* ---------- ecosystem band ----------
    A full-bleed dark section in BOTH modes. The section carries data-theme="dark"
@@ -849,115 +854,57 @@ h1.title{
   list-style:none; margin:0; padding:0;
 }
 
-/* ---------- "Other work": a scrolling strip, not a grid ----------
-   Ten modules stacked in a wrapping grid claimed as much vertical room as the
-   four case studies above them, which inverted the page's own hierarchy. As a
-   horizontal strip each group occupies one row whatever it holds, and the
-   section reads as the supporting layer it is.
-   overflow-x on a container is not keyboard-operable by default and there are
-   no focusable children inside these cards, so each <ul> carries tabindex="0"
-   and an aria-label — that is what makes the region reachable and scrollable
-   without a mouse (WCAG 2.1.1).
-   No scroll-snap at all, not even `proximity`. Snapping means the strip cannot
-   come to rest where the user let go — it hunts for the nearest anchor, and
-   when the nearest one is where the scroll began it undoes the gesture
-   entirely. Free scrolling stops exactly where the hand stopped. */
-.strip{
-  display:flex; gap:var(--space-16);
-  overflow-x:auto; overflow-y:hidden;
-  -webkit-overflow-scrolling:touch;
+/* ---------- other work: one card grid ----------
+   Flex, not grid, and the reason is the seventh card. Seven is prime, so with
+   three columns the last row always holds one. A grid sizes its tracks once for
+   the whole container, so that card is pinned to column one with two empty
+   tracks beside it, reading as a row that failed to fill. Flex sizes each line
+   on its own, so justify-content can centre the short one and it reads as
+   placed rather than left over.
+   flex-grow is 0 on purpose: letting the lone card grow would stretch it across
+   the full 892px, and .card-media img is aspect-ratio 1/1, so its art panel
+   would become an ~860px square. The basis is a third of the row minus its two
+   gaps, which is exactly what a three-column grid would have given it.
+   .work-grid, not .grid: .grid belongs to the case-study cards, which set their
+   own grid-template-columns, and switching it to flex would silently drop that. */
+.work-grid{
+  display:flex; flex-wrap:wrap; justify-content:center;
+  gap:var(--space-24);
   list-style:none; margin:0; padding:0;
+}
+.work-grid > .card{
+  flex:0 1 calc((100% - 2 * var(--space-24)) / 3);
+  min-width:0;
+}
 
-  /* Stops a sideways flick from escaping the strip and becoming the browser's
-     back/forward gesture once the strip hits its end. `contain` keeps the
-     overscroll inside this element without disabling the scroll itself. */
-  overscroll-behavior-x:contain;
-
-  /* No scrollbar. The fade below is the affordance instead. */
-  scrollbar-width:none; -ms-overflow-style:none;
-
-  /* Drag-to-scroll is wired up in script; the cursor advertises it. */
-  cursor:grab;
-
-  /* The edge fade. A mask, not an overlay: mask coordinates are relative to the
-     element's border box, so the fade stays pinned to the edges while the cards
-     scroll underneath. An absolutely-positioned overlay would be a child of the
-     scroll container and would slide away with the content.
-     The right edge only. A fade on the left marks track already covered, which
-     the reader has no decision left to make about; the right edge is the one
-     saying there is more. Keeping both made the strip look masked at both ends
-     mid-scroll rather than pointing anywhere.
-     The width defaults to 0, which makes the gradient fully opaque, and script
-     raises it only while something is actually hidden off the right. */
-  --fade-r:0px;
-  -webkit-mask-image:linear-gradient(to right,
-    #000 calc(100% - var(--fade-r)), transparent 100%);
-          mask-image:linear-gradient(to right,
-    #000 calc(100% - var(--fade-r)), transparent 100%);
+/* The card interior as it stands on the published site (commit 33ebab1), lifted
+   off the .strip rules it used to live in. Two separate concerns share the word
+   "flex" here without colliding: the rule above sizes the card as an ITEM of the
+   grid, this one makes the card a row CONTAINER for its own two halves.
+   The picture is a bleed, not a framed tile: no ground, no hairline, no radius,
+   and it stretches the full height of the card so both columns end flush. cover
+   rather than contain, because a 96px column of a 774x780 source has to crop
+   something and the centre is the part worth keeping.
+   Type steps down one rung from the vertical card's 16/14 to 14/12: the copy is
+   sharing a 281px card with a 96px picture, so it is a caption now, not body. */
+.work-grid > .card{
+  flex-direction:row; align-items:stretch;
+  gap:0; padding:0; overflow:hidden;
 }
-.strip::-webkit-scrollbar{ display:none; }
-.strip.fade-r{ --fade-r:44px; }
-/* While a drag is in flight, a stray text selection dragged across the cards
-   looks broken. The cursor flips to match. */
-.strip.dragging{
-  cursor:grabbing;
-  user-select:none; -webkit-user-select:none;
-}
-/* The native image-drag ghost hijacks a mouse drag before it can scroll.
-   pointer-events:none also means every press lands on the card, so the drag
-   starts the same wherever inside the strip it begins — these cards hold
-   nothing clickable, so nothing is lost. */
-.strip img{
-  -webkit-user-drag:none;
-  pointer-events:none;
-}
-.strip:focus-visible{
-  outline:2px solid var(--focus); outline-offset:4px;
-  border-radius:var(--radius-card);
-}
-/* A fixed basis rather than a fraction: cards must NOT divide the container, or
-   nothing overflows and there is nothing to scroll. 320 also leaves the third
-   card half-visible at 892, which is the affordance that says "there is more".
-   padding:0 and gap:0 on the card: the picture runs to the card's own edges
-   now, so the inset moves onto the text alone. overflow:hidden is what makes
-   the card's 16px radius cut the picture's corners instead of letting them
-   square off through it. */
-.strip .card{
-  flex:0 0 320px;
-  flex-direction:row; align-items:stretch; gap:0;
-  padding:0; overflow:hidden;
-}
-/* A bleed, not a frame. It touches the card's left, top and bottom edges — no
-   padding, no border, no radius of its own, and align-self:stretch is what
-   carries it the full height. 96px, up from 72: without the card's 16px inset
-   beside it the band needs a little more width to read as a band.
-   The art ground stays as the fallback behind a missing file. */
-.strip .card-media{
+.work-grid .card-media{
   flex:none; align-self:stretch;
-  width:96px; padding:0; margin:0; border:0; border-radius:0;
-  /* No ground of its own. Every source carries an alpha channel, so where the
-     artwork is transparent the card's own fill now shows through and the
-     picture sits ON the card rather than on a panel inset into it.
-     --surface-art was doing real work while the media was a framed tile; as a
-     bleed it only drew a second surface a few levels off the card's. */
-  background:transparent;
-  overflow:hidden;
+  width:96px;
+  padding:0; margin:0; border:0; border-radius:0;
+  background:transparent; overflow:hidden;
 }
-/* cover, not contain: the band is taller than it is wide, and contain would
-   draw the square source at 96x96 and leave the rest of the column empty — the
-   shape would change but nothing would be gained. The sources are centre-
-   weighted, so a centred crop keeps the subject. */
-.strip .card-media img{
+.work-grid .card-media img{
   width:100%; height:100%;
   aspect-ratio:auto;
   object-fit:cover; object-position:center;
 }
-/* The inset the card gave up. min-width:0 lets the column shrink inside the
-   flex row; without it a long unbroken word would push the card past its
-   320px basis. */
-.strip .card-text{ min-width:0; padding:var(--space-16); }
-.strip .card h4{ font-size:var(--text-body-sm); line-height:1.35; }
-.strip .card p{ font-size:var(--text-caption); line-height:1.5; margin:6px 0 0; }
+.work-grid .card-text{ min-width:0; padding:var(--space-16); }
+.work-grid .card h4{ font-size:var(--text-body-sm); line-height:1.35; }
+.work-grid .card p{ font-size:var(--text-caption); line-height:1.5; margin:6px 0 0; }
 /* Same rule as every card in the case study: canvas colour, one hairline,
    16px radius. No shadow, no tint. */
 .card{
@@ -1353,9 +1300,6 @@ footer p{
   h1.title{ font-size:26px; }
   /* One card per row: two columns of ~160px would break every project name. */
   .grid{ grid-template-columns:1fr; }
-  /* 280 on a 358px row leaves a clear sliver of the next card. At 320 the peek
-     was 38px, which reads as a clipped card rather than an invitation. */
-  .strip .card{ flex-basis:280px; }
   /* EXPERIMENT — phone keeps the desktop's row instead of stacking.
      The card inherits flex-direction:row from the base rule; only the split and
      the side change. order:-1 puts the picture on the LEFT while the DOM keeps
@@ -1381,6 +1325,9 @@ footer p{
      Each column gets 171px, leaving 125px for the text beside a 36px avatar.
      At --text-caption every role fits on one line, so the avatar keeps its
      desktop size here — no phone-only shrink is needed any more. */
+  /* One card per row. Two columns of ~160px would break every project name,
+     and at one column the trailing-card problem disappears with them. */
+  .work-grid > .card{ flex-basis:100%; }
   .team{ grid-template-columns:1fr 1fr; gap:var(--space-16); }
   .burst{ padding:var(--space-40) var(--space-24); }
   .band .eco-wide{ display:none; }
@@ -1459,8 +1406,9 @@ footer p{
       </div>
 
       <div class="statement">
-        <h1 class="title">I architect the platforms that run brokerages.</h1>
-        <p class="deck">Over ~7 years across FX/CFD brokerages, I've rebuilt entire trading stacks and architected the platforms behind them — partnerships, CRM, back office, payments, BI, and AI — most of it from the ground up, as the product owner leading small teams.</p>
+        <h1 class="title">I architect the systems that scale brokerage operations.</h1>
+        <p class="deck">I've spent about <span id="years-in-industry">8</span> years in the FX/CFD industry, moving from marketing into data and then into product. In the two years since, I've built most of a brokerage's operational backbone from scratch as the sole product owner.</p>
+        <p class="deck">That path shapes how I work: the business goal decides the data, and the data decides the product.</p>
       </div>
 
     </div>
@@ -1480,7 +1428,7 @@ footer p{
       <li class="card">
         <div class="card-body">
             <h4>IB Partnership System</h4>
-            <p>Designed and built a scalable partner engine from scratch — dynamic commission schemes, 7-level reward sharing, automated payouts. Grew the channel from 5 to ~517 partners in 6 months.</p>
+            <p>I designed and built a scalable partner engine from scratch. Dynamic commission schemes, 7-level reward sharing, automated payouts. I grew the channel from 5 to ~517 partners in 6 months.</p>
             <a class="card-btn" href="partnership-case-study.html">Read case study <span class="arw" aria-hidden="true">&rarr;</span></a>
         </div>
         <div class="card-media">
@@ -1490,7 +1438,7 @@ footer p{
       <li class="card">
         <div class="card-body">
             <h4>Trading App &amp; Client Portal</h4>
-            <p>Owned product design for onboarding, KYC, deposits/withdrawals, and live trading, end to end.</p>
+            <p>I rebuilt the trading app and client portal from scratch, covering onboarding, KYC, deposits, withdrawals, and live trading. At launch, about 18k clients and 1,600 live positions moved to the new stack with zero downtime.</p>
             <!-- TODO: swap for <a class="card-btn" href="..."> once the write-up exists. -->
             <button type="button" class="card-btn">Read case study <span class="arw" aria-hidden="true">&rarr;</span></button>
         </div>
@@ -1500,8 +1448,8 @@ footer p{
       </li>
       <li class="card">
         <div class="card-body">
-            <h4>CRM &amp; Back Office Rebuild</h4>
-            <p>Rebuilt the core data schema and migrated the entire client base (~18k clients, ~1,600 live positions) with zero downtime — in ~3.5 months with a 4-person team.</p>
+            <h4>Smart CRM &amp; Back Office</h4>
+            <p>I built the sales CRM and back office as one system on a shared data layer. Sales works leads, pipeline, and follow-ups; operations handles accounts, trading, and compliance; both draw on the same data.</p>
             <!-- TODO: swap for <a class="card-btn" href="..."> once the write-up exists. -->
             <button type="button" class="card-btn">Read case study <span class="arw" aria-hidden="true">&rarr;</span></button>
         </div>
@@ -1511,8 +1459,8 @@ footer p{
       </li>
       <li class="card">
         <div class="card-body">
-            <h4>Data &amp; BI Platform</h4>
-            <p>Designed and built an AI-powered decision-intelligence platform, unifying ~12 data sources, 100+ metrics, and 30+ dashboards into one self-service ecosystem.</p>
+            <h4>BI &amp; AI Platform</h4>
+            <p>I built an AI-powered BI platform that connects to any database, builds dashboards with AI, and plugs into Claude through MCP. Earlier, I built the data models and dashboards that cut one broker's reporting work by about 60%.</p>
             <!-- TODO: swap for <a class="card-btn" href="..."> once the write-up exists. -->
             <button type="button" class="card-btn">Read case study <span class="arw" aria-hidden="true">&rarr;</span></button>
         </div>
@@ -1526,8 +1474,8 @@ footer p{
   <!-- ============ ECOSYSTEM MAP ============ -->
   <section class="band" data-theme="dark" aria-labelledby="eco-title">
     <div class="wrap section">
-      <div class="sec"><h2 id="eco-title">One connected system, not a pile of features.</h2></div>
-      <p class="measure">Each module below solved a real operational problem. Built to work together — a client group defined once flows through partnerships, back office, and reporting without rework. This is the map of what I built.</p>
+      <div class="sec"><h2 id="eco-title">I think in systems, not features.</h2></div>
+      <p class="measure">When I build one part, I design it to work with the rest. Each tool connects to the next and shares the same data, so nothing runs on its own. That's why these pieces work as one platform, not separate tools.</p>
 
       <video class="eco eco-wide" src="videos/ecosystem-wide.webm"
              autoplay loop muted playsinline preload="none"
@@ -1539,18 +1487,20 @@ footer p{
   </section>
 
   <!-- ============ WORK ============ -->
-  <section class="wrap section" aria-labelledby="work-title">
+      <section class="wrap section" aria-labelledby="work-title">
     <div class="sec"><h2 id="work-title">Other work.</h2></div>
 
-    <h3 class="sub">Platform &amp; Infrastructure</h3>
-    <ul class="strip" tabindex="0" aria-label="Platform and infrastructure modules">
+    <!-- One list, no sub-groups, and no links: these are things I built, not
+         write-ups to open. Seven is prime, so the last row can never be full;
+         see .work-grid for how that row is handled. -->
+    <ul class="work-grid" aria-label="Other modules I built">
       <li class="card">
         <div class="card-media">
           <img src="images/client-portal.png" alt="Illustration of payments and onboarding: a client portal with deposit, withdrawal and document-submission steps" loading="lazy" decoding="async">
         </div>
         <div class="card-text">
           <h4>Payment &amp; KYC</h4>
-          <p>Delivered 6 payment integrations with real-time processing and streamlined KYC-to-first-deposit onboarding — raising automation from ~46% to ~84%.</p>
+          <p>Delivered 6 payment integrations with real-time processing, raising onboarding automation from ~46% to ~84%.</p>
         </div>
       </li>
       <li class="card">
@@ -1559,20 +1509,7 @@ footer p{
         </div>
         <div class="card-text">
           <h4>MT5 Integration</h4>
-          <p>Connected the CRM to MetaTrader 5 for real-time execution and account sync.</p>
-        </div>
-      </li>
-    </ul>
-
-    <h3 class="sub">Intelligence &amp; Growth</h3>
-    <ul class="strip" tabindex="0" aria-label="Intelligence and growth modules">
-      <li class="card">
-        <div class="card-media">
-          <img src="images/smart-crm.png" alt="Illustration of the sales CRM: a client conversation log with an appointment field and an active call" loading="lazy" decoding="async">
-        </div>
-        <div class="card-text">
-          <h4>Sales CRM Intelligence</h4>
-          <p>Built an in-house CRM with real-time customer intelligence for the sales floor, cutting first-deposit follow-up from ~13h to ~1.5h.</p>
+          <p>Connected the CRM to MetaTrader 5 for real-time trade execution, account sync, and live position data.</p>
         </div>
       </li>
       <li class="card">
@@ -1593,17 +1530,22 @@ footer p{
           <p>Launched the first premium tier for high-value traders, with segmentation, loyalty, and AI trading insights.</p>
         </div>
       </li>
-    </ul>
-
-    <h3 class="sub">Growth &amp; MarTech</h3>
-    <ul class="strip" tabindex="0" aria-label="Growth and marketing technology modules">
+      <li class="card">
+        <div class="card-media">
+          <img src="images/promotion-engine.png" alt="Illustration of the promotion engine: a configurable prize wheel with jackpot, multiplier and lose segments" loading="lazy" decoding="async">
+        </div>
+        <div class="card-text">
+          <h4>Promotion Engine</h4>
+          <p>Built a rule-based bonus and campaign engine that the team could configure without engineering.</p>
+        </div>
+      </li>
       <li class="card">
         <div class="card-media">
           <img src="images/marketing-automation.png" alt="Illustration of a lifecycle flow: event trigger, enter flow, first message, a timed wait, second message, then exit" loading="lazy" decoding="async">
         </div>
         <div class="card-text">
           <h4>Marketing Automation</h4>
-          <p>Built lifecycle messaging across triggered and event-based flows.</p>
+          <p>Built the lifecycle messaging system, running triggered and event-based flows across the client journey.</p>
         </div>
       </li>
       <li class="card">
@@ -1612,34 +1554,7 @@ footer p{
         </div>
         <div class="card-text">
           <h4>Tracking &amp; Attribution</h4>
-          <p>Built tracking and attribution pipelines across web, app, and ad platforms — web-to-app attribution and event-level data.</p>
-        </div>
-      </li>
-      <li class="card">
-        <div class="card-media">
-          <img src="images/a-b-testing.png" alt="Illustration of an experiment: users split into A and B test groups, with a results table marking the winning variant" loading="lazy" decoding="async">
-        </div>
-        <div class="card-text">
-          <h4>A/B Testing</h4>
-          <p>Ran experiments across onboarding, promotions, and UI to lift activation and conversion.</p>
-        </div>
-      </li>
-      <li class="card">
-        <div class="card-media">
-          <img src="images/promotion-engine.png" alt="Illustration of the promotion engine: a configurable prize wheel with jackpot, multiplier and lose segments" loading="lazy" decoding="async">
-        </div>
-        <div class="card-text">
-          <h4>Promotion Engine</h4>
-          <p>Built a rule-based bonus and campaign engine, configurable without code.</p>
-        </div>
-      </li>
-      <li class="card">
-        <div class="card-media">
-          <img src="images/growth-features.png" alt="Illustration of the growth mechanics: a referral badge representing a group of invited clients" loading="lazy" decoding="async">
-        </div>
-        <div class="card-text">
-          <h4>Growth Features</h4>
-          <p>Built acquisition and engagement mechanics that scale without manual work.</p>
+          <p>Built tracking and attribution pipelines across web, app, and ad platforms, down to event-level data.</p>
         </div>
       </li>
     </ul>
@@ -1698,7 +1613,7 @@ footer p{
   <!-- ============ TEAM ============ -->
   <section class="wrap section" aria-labelledby="team-title">
     <div class="sec"><h2 id="team-title">The team I led.</h2></div>
-    <p class="measure">I worked hands-on with a small engineering team — backend, frontend, mobile, analytics — often across a language barrier and time zones. I owned architecture, spec, design, and QA end to end, so when work reached them, they could just build.</p>
+    <p class="measure">I led a cross-functional engineering team across backend, frontend, mobile, and analytics, most of them in another country and another language. I ran it through clear specs and design more than meetings, owning the work from architecture to QA so the team always had a clear path to build.</p>
 
     <ul class="team">
       <li><figure>
@@ -1734,8 +1649,8 @@ footer p{
            autoplay loop muted playsinline preload="none" aria-hidden="true"></video>
     <div class="wrap section">
     <div class="burst">
-      <h2 id="contact-title">Building brokerage infrastructure, or hiring someone who has?</h2>
-      <p>I work on the systems behind FX/CFD brokerages — from trading stacks, CRM, and partnerships to BI, AI, and the data underneath. The parts that don't show, but decide everything.</p>
+      <h2 id="contact-title">Building it, or hiring someone who has?</h2>
+      <p>I turn operations that run on spreadsheets into systems that scale. I've done it deepest in brokerages, but the skill fits wherever a business needs its backbone built. Let's talk.</p>
       <a class="btn" href="mailto:nndao96@gmail.com">Get in touch <span aria-hidden="true">&rarr;</span></a>
       <p class="burst-contact"><a href="mailto:nndao96@gmail.com">nndao96@gmail.com</a> &middot; <a href="tel:+84977968586">+84 977 968586</a></p>
     </div>
@@ -1789,71 +1704,6 @@ footer p{
     }, {threshold:0}).observe(mark);
   })();
 
-  /* The "Other work" strips: edge fade + drag-to-scroll.
-     Trackpad and touch already scroll these natively; overscroll-behavior-x in
-     the stylesheet is what stops that gesture turning into browser back/forward
-     at the ends. This adds the two things CSS cannot do on its own. */
-  (function(){
-    var strips = document.querySelectorAll('.strip');
-    if (!strips.length) return;
-
-    Array.prototype.forEach.call(strips, function(s){
-
-      /* --- edge fade: right side only, and only while it hides something --- */
-      function paint(){
-        var max = s.scrollWidth - s.clientWidth;
-        /* 1px of slack: scrollLeft is fractional on HiDPI and never lands
-           exactly on max, so a strict compare leaves the fade stuck on at the
-           end of the track. */
-        s.classList.toggle('fade-r', s.scrollLeft < max - 1);
-      }
-      s.addEventListener('scroll', paint, {passive:true});
-      window.addEventListener('resize', paint, {passive:true});
-      paint();
-
-      /* --- drag to scroll --- */
-      var down = false, startX = 0, startLeft = 0, moved = 0, id = null;
-
-      s.addEventListener('pointerdown', function(e){
-        /* Mouse and pen only. Touch already scrolls natively, and capturing it
-           here would replace momentum scrolling with a worse copy of it. */
-        if (e.pointerType === 'touch') return;
-        down = true; moved = 0; id = e.pointerId;
-        startX = e.clientX; startLeft = s.scrollLeft;
-        s.classList.add('dragging');
-        s.setPointerCapture(id);
-      });
-
-      s.addEventListener('pointermove', function(e){
-        if (!down) return;
-        var dx = e.clientX - startX;
-        if (Math.abs(dx) > moved) moved = Math.abs(dx);
-        s.scrollLeft = startLeft - dx;
-        /* Called directly rather than waiting on the scroll event: that event is
-           dispatched asynchronously, so the fade would trail a frame behind the
-           pointer through the whole drag. */
-        paint();
-        e.preventDefault();
-      });
-
-      function release(e){
-        if (!down) return;
-        down = false;
-        s.classList.remove('dragging');
-        try { s.releasePointerCapture(id); } catch(err){}
-      }
-      s.addEventListener('pointerup', release);
-      s.addEventListener('pointercancel', release);
-
-      /* A drag that ends over a link would otherwise fire its click. Captured on
-         the way down so it is suppressed before the target ever sees it. The
-         5px floor keeps an ordinary click — which always jitters a pixel or
-         two — working normally. */
-      s.addEventListener('click', function(e){
-        if (moved > 5){ e.preventDefault(); e.stopPropagation(); }
-      }, true);
-    });
-  })();
 
   /* The icon-grid webm runs behind both the hero and the contact band, and its
      own cadence is quicker than the page wants. 0.625 stretches the 11s loop to
@@ -2070,6 +1920,33 @@ footer p{
 
     done();                       /* release the sentinel */
     setTimeout(finish, CEILING);
+  })();
+
+  /* The hero's "about N years" counts itself.
+     A typed figure is right for a few months and then quietly wrong for the
+     rest of the year, and it goes wrong in the one direction that undersells
+     the page. The number in the markup is a fallback for a reader with no JS,
+     so it is kept at whatever is true at the time of writing rather than at a
+     round figure.
+     Whole years first, then the leftover months decide: under 6 rounds down,
+     6 or more rounds up. */
+  (function(){
+    var el = document.getElementById('years-in-industry');
+    if (!el) return;
+
+    var START_Y = 2019, START_M = 0, START_D = 1;   /* 2019-01-01; getMonth() is 0-based */
+    var now = new Date();
+
+    var months = (now.getFullYear() - START_Y) * 12 + (now.getMonth() - START_M);
+    /* Calendar-month arithmetic counts a month the moment its number changes,
+       so the current one is only complete once the day of the month has come
+       round. Without this the count jumps a month early every time. */
+    if (now.getDate() < START_D) months -= 1;
+
+    var years = Math.floor(months / 12);
+    if (months % 12 >= 6) years += 1;
+
+    el.textContent = years;
   })();
 </script>
 
